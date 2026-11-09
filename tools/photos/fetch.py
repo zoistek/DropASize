@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageOps
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, 'out')
 os.makedirs(OUT, exist_ok=True)
-UA = 'DropASize-recipe-photos/1.0 (https://github.com/OmiAdip/nourish-thrive)'
+UA = 'DropASize-recipe-photos/1.0 (https://github.com/zoistek/DropASize)'
 ONLY = set(filter(None, os.environ.get('ONLY', '').split(',')))
 
 def get(url, timeout=12, limit=9_000_000):
