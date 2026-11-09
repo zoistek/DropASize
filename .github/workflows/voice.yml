@@ -1,6 +1,6 @@
-name: Record Mind voice (Gemini)
+name: Record voice lines (Gemini)
 
-# Run from the Actions tab. Records Mind lines that don't have audio yet, saves the MP3s
+# Run from the Actions tab. Records Mind and workout lines that don't have audio yet, saves the MP3s
 # to web/voice/ on the branch you run it on, then refreshes the test website.
 # Free Gemini keys have a small daily limit: just run it again the next day to continue.
 on:
@@ -31,26 +31,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Make sure ffmpeg is there
-        run: which ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+        timeout-minutes: 8  # an apt lock once hung this step for 15+ min
+        run: which ffmpeg || (sudo apt-get -o DPkg::Lock::Timeout=120 update -qq && sudo apt-get -o DPkg::Lock::Timeout=120 install -y -qq ffmpeg)
       - name: List the lines
         run: |
           if [ "${{ inputs.redo }}" = "yes" ]; then rm -f web/voice/*.mp3; echo '{}' > web/voice/manifest.json; fi
           node tools/voice/lines.js
-      - name: Record
+      - name: Record in batches of 10, saving after each
         env:
           GEMINI_API_KEY: ${{ secrets.VOICE }}
           VOICE_NAME: ${{ inputs.voice }}
-          MAX_LINES: ${{ inputs.max_lines }}
-        run: python3 tools/voice/generate.py
-      - name: Save the recordings
-        if: always()
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add web/voice
-          git diff --cached --quiet && { echo "Nothing new."; exit 0; }
-          git commit -qm "Voice: record Mind lines"
-          git push -q
-          gh workflow run test-site.yml --ref "${GITHUB_REF_NAME}"
-        env:
-          GH_TOKEN: ${{ github.token }}
+          count() { python3 -c "import json;print(sum(1 for v in json.load(open('web/voice/manifest.json')).values() if v))"; }
+          cap=${{ inputs.max_lines }}; total=0
+          while :; do
+            before=$(count)
+            MAX_LINES=10 python3 tools/voice/generate.py || true  # still save what this batch got
+            got=$(( $(count) - before )); total=$(( total + got ))
+            git add web/voice
+            git diff --cached --quiet || { git commit -qm "Voice: record lines"; git pull -q --rebase && git push -q; }
+            # a short batch means the daily limit, an error, or nothing left
+            [ "$got" -lt 10 ] && break
+            [ "$cap" -gt 0 ] && [ "$total" -ge "$cap" ] && break
+          done
+          [ "$total" -gt 0 ] && gh workflow run test-site.yml --ref "${GITHUB_REF_NAME}" || true
