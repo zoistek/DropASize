@@ -484,7 +484,7 @@ html,body,#root{max-width:100%;overflow-x:hidden}
 
   /* Catch writes the app makes straight to localStorage, too. */
   try{
-    Storage.prototype.setItem=function(k,v){rawSet.call(this,k,v);if(this===window.localStorage&&typeof k==='string'&&k.indexOf('nt:')===0)markDirty(k.slice(3))};
+    Storage.prototype.setItem=function(k,v){if(k==='nt:account')v=cloudValue('account',v);rawSet.call(this,k,v);if(this===window.localStorage&&typeof k==='string'&&k.indexOf('nt:')===0)markDirty(k.slice(3))};
     Storage.prototype.removeItem=function(k){rawRemove.call(this,k);if(this===window.localStorage&&typeof k==='string'&&k.indexOf('nt:')===0)markDirty(k.slice(3))};
   }catch(e){}
 
@@ -938,9 +938,9 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     origSetSilent('nt:session','in');
     applyCoachPlan();
     if(lsGet('nt:account')===null&&lsGet('nt:profile')!==null){
-      origSetSilent('nt:account',JSON.stringify({name:'Member',email:user.email,pw:password||'',joined:new Date().toISOString().slice(0,10)}));
-    }else if(password&&lsGet('nt:account')){
-      try{var a=JSON.parse(lsGet('nt:account'));a.pw=password;a.email=a.email||user.email;origSetSilent('nt:account',JSON.stringify(a))}catch(e){}
+      origSetSilent('nt:account',JSON.stringify({name:'Member',email:user.email,joined:new Date().toISOString().slice(0,10)}));
+    }else if(lsGet('nt:account')){
+      try{var a=JSON.parse(lsGet('nt:account'));delete a.pw;a.email=a.email||user.email;origSetSilent('nt:account',JSON.stringify(a))}catch(e){}
     }
     window.ntSessionEmail=user.email;
     await Promise.all([loadRole(),loadLibrary(),loadAvatar()]);
