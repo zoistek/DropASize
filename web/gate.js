@@ -130,6 +130,18 @@
 
   /* ---------- recipe library (managed in the coach panel) ---------- */
   function libRow(r){return {id:r.id,n:r.title,e:'',meal:r.meal||'Dinner',cuisine:r.cuisine||'',mins:r.minutes||0,k:r.kcal||0,p:Number(r.protein)||0,c:Number(r.carbs)||0,f:Number(r.fat)||0,flags:r.tags||[],hue:'#E9EFEA',ing:r.ingredients||[],steps:r.steps||[],img:r.image_url||'',credit:r.image_credit||''}}
+  /* ---------- Coach's meals (managed in the coach panel; the app falls back to its built-in set) ---------- */
+  async function loadCoachMeals(){
+    try{
+      var r=await Promise.all([rest('GET','coach_meals?published=eq.true&select=id,cuisine,meal,diet,name,method,carb_level,kcal,protein,carbs,fat,ingredients&order=id.asc&limit=5000'),
+        rest('GET','coach_foods?select=name,food_group,diet,kcal,protein,carbs,fat&limit=5000'),rest('GET','coach_food_list?select=*&order=position.asc&limit=5000')]);
+      var c={};
+      if(Array.isArray(r[0])&&r[0].length)c.recipes=r[0].filter(function(x){return x.ingredients&&x.ingredients.length}).map(function(x){return {id:x.id,cu:x.cuisine,m:x.meal,d:x.diet,n:x.name,how:x.method,ing:x.ingredients,base:{k:+x.kcal,p:+x.protein,c:+x.carbs,f:+x.fat},cl:x.carb_level}});
+      if(Array.isArray(r[1])&&r[1].length){c.fd={};r[1].forEach(function(f){c.fd[f.name]={g:f.food_group,d:f.diet,p:+f.protein,c:+f.carbs,f:+f.fat,k:+f.kcal}})}
+      if(Array.isArray(r[2])&&r[2].length)c.foods=r[2].map(function(f){return {cat:f.category,n:f.name,d:f.diet,sv:f.serving,sg:+f.serving_g,k:+f.kcal,p:+f.protein,c:+f.carbs,f:+f.fat,src:f.source,note:f.notes}});
+      window.ntCoach=c;try{rawSet.call(localStorage,'ntcoach',JSON.stringify(c))}catch(e){}
+    }catch(e){try{window.ntCoach=JSON.parse(lsGet('ntcoach')||'{}')}catch(x){}}
+  }
   async function loadLibrary(){
     try{
       var rows=await rest('GET','recipes?published=eq.true&select=id,title,meal,cuisine,minutes,kcal,protein,carbs,fat,tags,ingredients,steps,image_url,image_credit&order=title.asc&limit=2000');
@@ -551,7 +563,7 @@
       try{var a=JSON.parse(lsGet('nt:account'));delete a.pw;a.email=a.email||user.email;origSetSilent('nt:account',JSON.stringify(a))}catch(e){}
     }
     window.ntSessionEmail=user.email;
-    await Promise.all([loadRole(),loadLibrary(),loadAvatar()]);
+    await Promise.all([loadRole(),loadLibrary(),loadCoachMeals(),loadAvatar()]);
     startApp();
     setTimeout(hcBoot,600);
     setTimeout(showCoachNotes,1500);
@@ -696,7 +708,7 @@
     if(session&&session.user){
       try{await token();await enter(session.user,null);return}
       catch(e){
-        if(/Failed to fetch|network/i.test(String(e&&e.message))&&lsGet(OWNER_KEY)===session.user.id){try{window.ntLibrary=JSON.parse(lsGet('ntlib')||'[]')}catch(x){}startApp();setTimeout(hcBoot,600);return}
+        if(/Failed to fetch|network/i.test(String(e&&e.message))&&lsGet(OWNER_KEY)===session.user.id){try{window.ntLibrary=JSON.parse(lsGet('ntlib')||'[]')}catch(x){}try{window.ntCoach=JSON.parse(lsGet('ntcoach')||'{}')}catch(x){}startApp();setTimeout(hcBoot,600);return}
         saveSession(null);showLogin('Please log in again.');return;
       }
     }
