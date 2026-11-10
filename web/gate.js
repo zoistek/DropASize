@@ -502,6 +502,22 @@
   };
 
 
+  window.ntDeleteMyAccount=async function(){
+    if(!session||!session.user){location.href=SITE_URL+'delete-account.html';return}
+    if(!confirm('Delete your account?\n\nThis permanently removes your login, profile, food and weight logs, photos, messages and everything else. It can\u2019t be undone.'))return;
+    var typed=prompt('To confirm, type DELETE');if(String(typed||'').trim().toUpperCase()!=='DELETE')return;
+    try{await window.ntDeleteServerData();alert('Your account and data have been deleted.')}catch(e){alert('Couldn\u2019t delete your account. Check your connection and try again.')}
+  };
+  /* Deleted somewhere else (the web page, or by the coach)? Sign out here too. Only a missing account counts, not an expired login. */
+  function gone(){saveSession(null);try{localStorage.clear()}catch(e){}location.reload()}
+  async function checkStillExists(){
+    if(!session||!session.access_token)return;
+    try{var r=await realFetch(SB_URL+'/auth/v1/user',{headers:{apikey:SB_KEY,Authorization:'Bearer '+session.access_token}});
+      if(r.status===401||r.status===403||r.status===404){var t=await r.text();if(/not exist|not found|user_not_found/i.test(t))gone()}}catch(e){}
+  }
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkStillExists()});
+  window.addEventListener('focus',checkStillExists);
+
   /* ---------- AI: one-time notice, reporting ---------- */
   var AI_CSS='.nt-ai-notice{position:fixed;inset:0;z-index:9995;background:rgba(14,53,29,.3);display:flex;align-items:flex-end;justify-content:center;padding:12px}.nt-ai-card{background:#fff;border-radius:26px;padding:20px;max-width:460px;width:100%;font:14px/1.55 "Plus Jakarta Sans",system-ui,sans-serif;color:#0F2418;box-shadow:0 30px 60px -30px rgba(0,0,0,.4)}.nt-ai-card b{font-size:17px}.nt-ai-card p{margin:10px 0;color:#3D4A42}.nt-ai-card a{color:#0E351D;font-weight:600}.nt-ai-btns{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-top:14px}.nt-ai-btns button{border:0;border-radius:999px;padding:13px;font:700 14px "Plus Jakarta Sans",sans-serif;cursor:pointer;background:#F1F5EE;color:#0E351D}.nt-ai-btns [data-a=yes]{background:#5DBC01';
   function aiNotice(){
@@ -574,6 +590,7 @@
     setTimeout(hcBoot,600);
     setTimeout(showCoachNotes,1500);
     setTimeout(publishScore,4000);
+    setTimeout(checkStillExists,2500);
   }
 
   var css='.ntl{max-width:420px;margin:0 auto;padding:12vh 20px 40px;font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:#0F2418}'+
