@@ -165,7 +165,7 @@
     document.body.appendChild(d);requestAnimationFrame(function(){d.style.opacity='1'});
     setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove()},450)},arguments[1]&&arguments[1].label?12000:3800);
   };
-  var KIND={chat:'coach messages',recipe:'AI recipes',other:'AI requests'};
+  var KIND={chat:'Coach messages',recipe:'AI builds',other:'AI builds'};
 
   /* ---------- reminders: phone notifications in the app, browser notifications on the web ---------- */
   var webTimers={};
@@ -543,7 +543,7 @@
     if(u.indexOf('api.anthropic.com')===-1)return realFetch(url,opts);
     if(lsGet('ntaiok')!=='1'&&!(await aiNotice()))return new Response(JSON.stringify({type:'error',error:{type:'daily_limit',message:'AI features are off until you agree to the AI notice.'}}),{status:429,headers:{'Content-Type':'application/json'}});
     var t;try{t=await token()}catch(e){return new Response(JSON.stringify({error:{message:'Please log in again to use the coach'}}),{status:401,headers:{'Content-Type':'application/json'}})}
-    var res=await realFetch(SB_URL+'/functions/v1/ai',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+t},body:opts&&opts.body,signal:opts&&opts.signal});
+    var res=await realFetch(SB_URL+'/functions/v1/ai-test',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+t},body:opts&&opts.body,signal:opts&&opts.signal});
     try{
       var left=res.headers.get('x-ai-remaining'),kind=res.headers.get('x-ai-kind');
       if(left!==null&&Number(left)<=5)window.ntToast(Number(left)===0?'That was your last of today\u2019s '+KIND[kind]+'. More tomorrow.':left+' '+KIND[kind]+' left today');
