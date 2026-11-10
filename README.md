@@ -14,15 +14,24 @@ Backend: Supabase project `jzctsfvowmuowfxaiayy` (tables `profiles`, `user_data`
 
 ## Test branch AI limits
 
-`test` sends AI requests to the separate Supabase function `ai-test` (source in
-`supabase/functions/ai-test/index.ts`). The existing production `ai` function is unchanged.
-Each account, including coaches, gets 5 non-chat AI generations combined and 20 Coach
-messages per day, resetting at midnight Europe/London. The existing atomic `ai_take` /
-`ai_refund` RPCs enforce this using the `recipe` and `chat` usage buckets. Counters are
-account-wide and shared with existing usage of those buckets, not reset by reinstalling.
-Viewing or deleting saved builds does not spend or restore an allowance.
+`test` uses `ai-feature-test` (source in `supabase/functions/ai-feature-test/index.ts`).
+The production `ai` and previous `ai-test` functions stay unchanged. Test-only counters
+are stored in `ai_feature_usage`; setup SQL is in `tools/supabase/ai-feature-limits.sql`.
+The table has RLS and no client grants; only the service role can call its counter RPCs.
 
-Verify: `node tools/tests/ai-limits.test.js` and `node tools/tests/saved-builds.test.js`.
-To roll back, revert the AI-limits commit on `test` and push. This restores the previous
-endpoint; no database schema, user data or production function needs restoring. The
-unused `ai-test` function may then be removed.
+Every account gets 5 generations per feature per day: shopping lists, Shop builds
+(all My day / Picks / Takeaway / Week modes combined, except lists), recipes,
+makeovers, check-in feedback, weekly insights, mindset notes, exercise help, food
+estimates, food photo scans, step scans, equipment scans and other AI requests.
+Coach has a separate 20-message allowance. All reset at midnight Europe/London.
+The counters are atomic and account-wide. This new test allowance starts fresh;
+previous aggregate usage stays untouched. Viewing/deleting saved content uses no quota.
+
+Opening a Discover, Saved or AI recipe shows Make shopping list for the selected
+servings; the generated list is saved under Food > Lists.
+
+Verify with the scripts in `tools/tests/`, especially `ai-feature-limits.test.js`
+and `recipe-shopping.test.js`.
+To undo this update, revert its commit on `test` and push: it restores the previous
+endpoint and UI. No user data or old counters need restoring. The unused
+`ai-feature-test` function and its test counters may be removed separately.

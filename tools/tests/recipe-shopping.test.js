@@ -1,0 +1,10 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync(__dirname+'/../../web/index.html','utf8'),start=html.indexOf('function NtRecipeShopping('),source=html.slice(start,html.indexOf('function ntBuilds()',start));
+const writes=[],states=[];let prompt='',failure=false;
+const ctx={p:init=>{const i=states.length;states.push(init);return[init,v=>states[i]=v]},e:{},de:'button',NtBuildContent:'content',React:{createElement:(type,props,...children)=>({type,props,children})},ntPickStores:()=>['Tesco'],Vi:(i,n)=>i.replace(/^\d+/,v=>Number(v)*n),Re:async p=>{prompt=p;if(failure)throw Error('Daily shopping-list limit reached');return{sections:[{aisle:'Produce',items:[{item:'Carrots',qty:'200g'}]}]}},ntSaveList:async(...args)=>{writes.push(args);return{...args[0],_listId:'saved'}},window:{}};
+vm.createContext(ctx);vm.runInContext(source,ctx);
+(async()=>{const recipe={n:'Carrot soup',ing:['100g carrots','1 onion']};let view=ctx.NtRecipeShopping({recipe,servings:2});await view.children[0].props.onClick();assert(prompt.startsWith('[DropASize:shopping_list]'));assert(prompt.includes('200g carrots'));assert(prompt.includes('2 onion'));assert.equal(writes[0][1],'Recipe: Carrot soup');assert.equal(writes[0][2],'Tesco');assert.equal(states[0],false);assert.equal(states[1]._listId,'saved');
+ failure=true;view=ctx.NtRecipeShopping({recipe,servings:1});await view.children[0].props.onClick();assert.equal(writes.length,1);assert(states.includes('Daily shopping-list limit reached'));
+ assert(html.includes('NtRecipeShopping,{key:k.id+":"+c,recipe:k,servings:c}'));assert(html.includes('G.find(U=>U.id===k)||aiL.find(U=>U.id===k)'));
+ console.log('Recipe shopping passed: shared regular/saved/AI detail view, selected servings, saved list, visible limit errors and loading recovery');
+})().catch(e=>{console.error(e);process.exitCode=1});

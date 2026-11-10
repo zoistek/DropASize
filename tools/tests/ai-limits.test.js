@@ -24,6 +24,6 @@ const build=prompt=>handler(new Request('https://test/ai-test',{method:'POST',bo
  // A new handler context/device cannot reset the server's existing account count.
  user='member-a';assert.equal((await build('new device plan')).status,429);
  user=null;assert.equal((await build('no login')).status,401);
- const gate=fs.readFileSync(__dirname+'/../../web/gate.js','utf8');assert(gate.includes("SB_URL+'/functions/v1/ai-test'"));
+ const gate=fs.readFileSync(__dirname+'/../../web/gate.js','utf8');assert(gate.includes("SB_URL+'/functions/v1/ai-feature-test'"));
  console.log('AI limits passed: shared 5 builds, separate 20 messages, concurrent requests, account isolation, refunds, signed-in access and test routing');
 })().catch(e=>{console.error(e);process.exitCode=1});
