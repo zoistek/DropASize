@@ -109,6 +109,12 @@
   async function pullFromCloud(user){
     if(Object.keys(dirty).length&&lsGet(OWNER_KEY)===user.id)await flush();
     var rows=await rest('GET','user_data?user_id=eq.'+user.id+'&select=key,value,updated_at');
+    /* Quiz first: answers made before the account existed belong to the new account (only if it has no data yet). */
+    if(lsGet('ntguest')==='1'&&lsGet(OWNER_KEY)===null&&!(rows||[]).length){
+      rawSet.call(localStorage,'ntdataver','2');lsSet(OWNER_KEY,user.id);
+      try{for(var gi=0;gi<localStorage.length;gi++){var gk=localStorage.key(gi);if(gk&&gk.indexOf('nt:')===0)markDirty(gk.slice(3))}}catch(e){}
+    }
+    try{rawRemove.call(localStorage,'ntguest')}catch(e){}
     if(lsGet(OWNER_KEY)!==user.id||lsGet('ntdataver')!=='2'){rawSet.call(localStorage,'ntdataver','2');
       var old=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf('nt:')===0||k.indexOf('nt-')===0))old.push(k)}}catch(e){}
       old.forEach(function(k){try{rawRemove.call(localStorage,k)}catch(e){}});try{rawRemove.call(localStorage,'ntavatar')}catch(e){}window.ntAvatarUrl='';
@@ -589,6 +595,35 @@
   '@media (min-width:640px){.ntl>p,.ntl-legal{color:#DDEEE5}.ntl-legal a{color:#B7F07A;text-decoration:underline;text-underline-offset:2px}.ntl>.lnk{color:#F4F6F2;opacity:1}}'+
   '.ntl .err{background:#FBEDEA;color:#9A3422}.ntl .ok{background:#EEF8E3;color:#0E351D}';
 
+  function googleStart(){
+    if(window.ReactNativeWebView){
+      /* Google blocks sign-in inside app web views, so the phone app opens it in the system browser. */
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'google',id:'google',url:SB_URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(APP_RETURN)}));return;
+    }
+    location.href=SB_URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(location.origin+location.pathname);
+  }
+  /* ---------- quiz first: new members answer the quiz, then make their account at the end ---------- */
+  function startQuiz(fresh){
+    if(fresh){ /* "New here?" on a phone someone used before: start clean, nobody sees the last member's data */
+      var old=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf('nt:')===0||k.indexOf('nt-')===0))old.push(k)}}catch(e){}
+      old.forEach(function(k){try{rawRemove.call(localStorage,k)}catch(e){}});[OWNER_KEY,DIRTY_KEY,'ntdataver','ntlastpull'].forEach(function(k){try{rawRemove.call(localStorage,k)}catch(e){}});dirty={};
+      rawSet.call(localStorage,'ntguest','1');location.reload();return;
+    }
+    rawSet.call(localStorage,'ntguest','1');
+    window.ntShowLogin=function(){try{sessionStorage.setItem('ntlogin','1')}catch(e){}location.reload()};
+    window.ntGoogle=googleStart;
+    window.ntCreateAccount=async function(em,pwd){
+      try{
+        var d=await authCall('signup',{email:em,password:pwd});
+        if(d.access_token){saveSession(d);location.reload();return ''} /* the first login keeps the quiz answers (see pullFromCloud) */
+        return 'Almost there. We sent a link to '+em+'. Tap it to confirm your email, then log in. Your plan is saved on this phone.';
+      }catch(err){
+        var m=String(err&&err.message||'');
+        return /already registered|already exists/i.test(m)?'This email already has an account. Tap \u201cAlready a member? Log in\u201d at the top of the quiz.':/password/i.test(m)?'Please choose a stronger password (6+ characters, not a common one).':'Couldn\u2019t create your account. Check your connection and try again.';
+      }
+    };
+    startApp();
+  }
   function showLogin(note){
     var root=document.getElementById('root');
     var mode='in';
@@ -607,22 +642,15 @@
     function render(){
       sub.textContent=mode==='in'?'Welcome back. Log in to your coach.':mode==='up'?'Create your account. Your progress is saved safely online.':'Enter your email and we will send you a link to reset your password.';
       go.textContent=mode==='in'?'Log in':mode==='up'?'Create account':'Send reset link';
-      sw.textContent=mode==='in'?'New here? Create an account':'I already have an account';
+      sw.textContent=mode==='in'?'New here? Take the 60-second quiz':'I already have an account';
       pw.style.display=mode==='reset'?'none':'block';fg.style.display=mode==='in'?'block':'none';
       p.autocomplete=mode==='up'?'new-password':'current-password';
       gb.style.display=orl.style.display=mode==='reset'?'none':'';
     }
     var gb=root.querySelector('#ntl-g'),orl=root.querySelector('#ntl-or');
-    gb.onclick=function(){
-      say('');gb.disabled=true;
-      if(window.ReactNativeWebView){
-        /* Google blocks sign-in inside app web views, so the phone app opens it in the system browser. */
-        window.ReactNativeWebView.postMessage(JSON.stringify({type:'google',id:'google',url:SB_URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(APP_RETURN)}));
-        setTimeout(function(){gb.disabled=false},4000);return;
-      }
-      location.href=SB_URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(location.origin+location.pathname);
-    };
-    sw.onclick=function(){mode=mode==='in'?'up':'in';say('');render()};
+    gb.onclick=function(){say('');gb.disabled=true;googleStart();setTimeout(function(){gb.disabled=false},4000)};
+    /* New members take the quiz first; the account is made at the end of it */
+    sw.onclick=function(){if(mode==='in'){startQuiz(true);return}mode='in';say('');render()};
     fg.onclick=function(){mode='reset';say('');render()};
     f.onsubmit=async function(ev){
       ev.preventDefault();say('');
@@ -712,6 +740,8 @@
         saveSession(null);showLogin('Please log in again.');return;
       }
     }
+    var wantLogin=false;try{wantLogin=sessionStorage.getItem('ntlogin')==='1';sessionStorage.removeItem('ntlogin')}catch(e){}
+    if(!wantLogin&&lsGet(OWNER_KEY)===null){startQuiz(false);return}
     showLogin();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
