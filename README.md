@@ -35,3 +35,16 @@ and `recipe-shopping.test.js`.
 To undo this update, revert its commit on `test` and push: it restores the previous
 endpoint and UI. No user data or old counters need restoring. The unused
 `ai-feature-test` function and its test counters may be removed separately.
+
+## RevenueCat Test Store connection (`test` only)
+
+Open Your account > DropASize Premium in the Android test build to fetch the current
+monthly offering, make a simulated purchase, restore it or refresh status. The
+RevenueCat SDK identifies customers with their signed-in Supabase UUID. Web is a
+preview and does not accept payments. The public `test_` SDK key is intentional.
+
+This is a purchase integration test, not a production entitlement authority. Client
+results are not written to profile.paid or used to authorise server AI access.
+Backend subscription verification, production feature gates, invitations and admin
+plan management must be implemented before launch. Replace the Test Store SDK key
+with Google Play's SDK key and complete store setup before any store release.

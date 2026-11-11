@@ -526,6 +526,15 @@
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkStillExists()});
   window.addEventListener('focus',checkStillExists);
 
+  /* Test Store bridge. Client results are previews, never backend access grants. */
+  var billingPending={},billingSequence=0;
+  window.ntBillingResult=function(result){var pending=result&&billingPending[result.id];if(!pending)return;delete billingPending[result.id];clearTimeout(pending.timeout);if(!session||session.user.id!==result.userId){pending.reject(new Error('Your account changed. Please reopen Premium.'));return}if(result.error)pending.reject(new Error(result.error));else pending.resolve(result)};
+  window.ntBillingRequest=function(action){return new Promise(function(resolve,reject){
+    if(!session||!session.user)return reject(new Error('Please sign in first.'));
+    if(!window.ReactNativeWebView)return reject(new Error('Test purchases are available in the Android test build. This website is a design preview.'));
+    var id='billing-'+(++billingSequence);billingPending[id]={resolve:resolve,reject:reject,timeout:setTimeout(function(){delete billingPending[id];reject(new Error('The purchase check timed out. Please try again.'))},180000)};
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'revenuecat',id:id,userId:session.user.id,action:action}));
+  })};
   /* ---------- AI: one-time notice, reporting ---------- */
   var AI_CSS='.nt-ai-notice{position:fixed;inset:0;z-index:9995;background:rgba(14,53,29,.3);display:flex;align-items:flex-end;justify-content:center;padding:12px}.nt-ai-card{background:#fff;border-radius:26px;padding:20px;max-width:460px;width:100%;font:14px/1.55 "Plus Jakarta Sans",system-ui,sans-serif;color:#0F2418;box-shadow:0 30px 60px -30px rgba(0,0,0,.4)}.nt-ai-card b{font-size:17px}.nt-ai-card p{margin:10px 0;color:#3D4A42}.nt-ai-card a{color:#0E351D;font-weight:600}.nt-ai-btns{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-top:14px}.nt-ai-btns button{border:0;border-radius:999px;padding:13px;font:700 14px "Plus Jakarta Sans",sans-serif;cursor:pointer;background:#F1F5EE;color:#0E351D}.nt-ai-btns [data-a=yes]{background:#5DBC01';
   function aiNotice(){

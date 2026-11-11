@@ -952,6 +952,15 @@ html,body,#root{max-width:100%;overflow-x:hidden}
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkStillExists()});
   window.addEventListener('focus',checkStillExists);
 
+  /* Test Store bridge. Client results are previews, never backend access grants. */
+  var billingPending={},billingSequence=0;
+  window.ntBillingResult=function(result){var pending=result&&billingPending[result.id];if(!pending)return;delete billingPending[result.id];clearTimeout(pending.timeout);if(!session||session.user.id!==result.userId){pending.reject(new Error('Your account changed. Please reopen Premium.'));return}if(result.error)pending.reject(new Error(result.error));else pending.resolve(result)};
+  window.ntBillingRequest=function(action){return new Promise(function(resolve,reject){
+    if(!session||!session.user)return reject(new Error('Please sign in first.'));
+    if(!window.ReactNativeWebView)return reject(new Error('Test purchases are available in the Android test build. This website is a design preview.'));
+    var id='billing-'+(++billingSequence);billingPending[id]={resolve:resolve,reject:reject,timeout:setTimeout(function(){delete billingPending[id];reject(new Error('The purchase check timed out. Please try again.'))},180000)};
+    window.ReactNativeWebView.postMessage(JSON.stringify({type:'revenuecat',id:id,userId:session.user.id,action:action}));
+  })};
   /* ---------- AI: one-time notice, reporting ---------- */
   var AI_CSS='.nt-ai-notice{position:fixed;inset:0;z-index:9995;background:rgba(14,53,29,.3);display:flex;align-items:flex-end;justify-content:center;padding:12px}.nt-ai-card{background:#fff;border-radius:26px;padding:20px;max-width:460px;width:100%;font:14px/1.55 "Plus Jakarta Sans",system-ui,sans-serif;color:#0F2418;box-shadow:0 30px 60px -30px rgba(0,0,0,.4)}.nt-ai-card b{font-size:17px}.nt-ai-card p{margin:10px 0;color:#3D4A42}.nt-ai-card a{color:#0E351D;font-weight:600}.nt-ai-btns{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-top:14px}.nt-ai-btns button{border:0;border-radius:999px;padding:13px;font:700 14px "Plus Jakarta Sans",sans-serif;cursor:pointer;background:#F1F5EE;color:#0E351D}.nt-ai-btns [data-a=yes]{background:#5DBC01';
   function aiNotice(){
@@ -1962,6 +1971,22 @@ function NtAvatarLinks(){
   async function remove(){if(!await window.ntConfirm('Remove your profile photo?'))return;setBusy(true);try{await window.ntRemoveAvatar();window.ntToast('Photo removed')}catch(err){window.ntToast('Couldn’t remove it. Try again.')}setBusy(false)}
   return h('div',{className:'nt-avlinks'},h('button',{type:'button',onClick:function(){ref.current&&ref.current.click()},disabled:busy},busy?'Uploading…':u?'Change photo':'Add a profile photo'),u&&!busy?h('button',{type:'button',className:'mut',onClick:remove},'Remove'):null,h('input',{ref:ref,type:'file',accept:'image/*',hidden:true,onChange:pick}));
 }
+/* Premium purchase preview: Test Store only; access enforcement is configured separately. */
+function NtPremiumTest(){
+  const h=React.createElement,[info,setInfo]=React.useState(null),[busy,setBusy]=React.useState(false),[error,setError]=React.useState('');
+  async function run(action){if(busy)return;setBusy(true);setError('');try{setInfo(await window.ntBillingRequest(action))}catch(err){setError(err.message)}finally{setBusy(false)}}
+  React.useEffect(()=>{if(window.ReactNativeWebView)run('status')},[]);
+  return h('section',{style:{marginTop:16,padding:16,borderRadius:20,background:'#EEF8E3',color:'#0E351D',minWidth:0}},
+    h('div',{style:{fontSize:17,fontWeight:700}},'DropASize Premium'),
+    h('div',{style:{fontSize:12,fontWeight:700,marginTop:4}},'TEST MODE · No real payments'),
+    h('p',{style:{fontSize:13,lineHeight:1.5}},info&&info.premium?'Your test Premium subscription is active.':'Personalised AI food support, training and progress insights. Planned price: £29.99/month, auto-renewing.'),
+    h('p',{style:{fontSize:12}},'Test purchases do not grant production Premium access.'),
+    info&&info.price&&h('p',{style:{fontSize:13,fontWeight:700}},'Test Store price: ',info.price,' / month'),
+    error&&h('p',{role:'alert',style:{fontSize:13,color:'#9A3422',overflowWrap:'anywhere'}},error),
+    h('div',{style:{display:'grid',gap:8}},h('button',{type:'button',disabled:busy||!!(info&&info.premium),onClick:()=>run('purchase'),style:{width:'100%',border:0,borderRadius:999,padding:'13px 16px',background:'#5DBC01',color:'#0E351D',font:'700 14px "Plus Jakarta Sans",system-ui,sans-serif',cursor:'pointer',opacity:busy?.6:1}},busy?'Please wait…':info&&info.premium?'Test Premium active':'Try test subscription'),
+    h('button',{type:'button',disabled:busy,onClick:()=>run('restore'),style:{border:0,background:'transparent',padding:10,color:'#0E351D',fontWeight:700,cursor:'pointer'}},'Restore test purchases'),
+    h('button',{type:'button',disabled:busy,onClick:()=>run('status'),style:{border:0,background:'transparent',padding:8,color:'#0E351D',cursor:'pointer'}},'Refresh subscription status')));
+}
 /* Account sheet: opens from the profile button on every page. */
 function NtAccountSheet(props){
   var h=React.createElement,us=React.useState;
@@ -1989,6 +2014,7 @@ function NtAccountSheet(props){
       h('input',{id:'nta-name',className:'nta-input',value:name,maxLength:40,autoComplete:'nickname',onChange:function(e){setName(e.target.value)},onKeyDown:function(e){if(e.key==='Enter')saveName()}}),
       h('div',{className:'nta-meta'},h('span',null,props.email||''),props.joined?h('span',null,'Member since '+new Date(props.joined+'T12:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'})):null),
       h('button',{className:'nt-cta',onClick:saveName,disabled:busy},'Save',h('span',{className:'nt-cta-ico'},h(NtIcon,{name:'check',size:16,stroke:2}))),
+      h(NtPremiumTest,null),
       h('div',{className:'nta-label',style:{marginTop:18}},'Your badges'),h(NtBadges,null),
       h('div',{className:'nta-label',style:{marginTop:18}},'Invite a friend'),h(NtInvite,null),
       h('div',{className:'nta-label',style:{marginTop:18}},'Health Connect'),h(NtHC,{mode:'profile'}),

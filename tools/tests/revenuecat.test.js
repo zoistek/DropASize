@@ -1,0 +1,12 @@
+const fs=require('fs'),assert=require('assert');
+(async()=>{const {createTestBilling,TEST_API_KEY}=await import('data:text/javascript,'+encodeURIComponent(fs.readFileSync('native/revenueCat.js','utf8')));assert(TEST_API_KEY.startsWith('test_'));
+ const calls=[],pkg={product:{priceString:'£29.99'}},free={entitlements:{active:{}}},premium={entitlements:{active:{premium:{expirationDate:'2026-12-11T00:00:00Z'}}}};let active=false;
+ const sdk={configure:c=>calls.push(['configure',c]),logIn:async u=>{calls.push(['login',u]);active=false},getOfferings:async()=>({current:{monthly:pkg}}),purchasePackage:async p=>{assert.strictEqual(p,pkg);active=true;return {customerInfo:premium}},restorePurchases:async()=>premium,getCustomerInfo:async()=>active?premium:free};
+ const billing=createTestBilling(sdk),userId='47435528-e5e1-473b-8a05-bae935e3b3ff';
+ assert.equal((await billing({userId,action:'status'})).premium,false);const bought=await billing({userId,action:'purchase'});assert(bought.premium&&bought.testMode);assert.equal(bought.price,'£29.99');assert((await billing({userId,action:'restore'})).premium);
+ const next='3b056204-bd1e-464b-89f2-392411896b23';assert.equal((await billing({userId:next,action:'status'})).premium,false);assert.equal(calls.filter(x=>x[0]==='configure').length,1);assert.equal(calls.at(-1)[0],'login');
+ await assert.rejects(billing({userId:'',action:'purchase'}),/Sign in/);await assert.rejects(billing({userId,action:'bad'}),/Unknown/);
+ sdk.getOfferings=async()=>({current:null});await assert.rejects(billing({userId,action:'purchase'}),/monthly package/);
+ const html=fs.readFileSync('web/index.html','utf8'),gate=fs.readFileSync('web/gate.js','utf8');assert(html.includes('TEST MODE · No real payments'));assert(gate.includes('session.user.id!==result.userId'));assert(!gate.includes("te('premium'"));
+ console.log('RevenueCat bridge passed: configure, monthly package, purchase, restore, account switch, missing product and invalid request handling');
+})().catch(e=>{console.error(e);process.exitCode=1});

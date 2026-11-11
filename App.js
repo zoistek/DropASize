@@ -10,6 +10,9 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import appHtml from './web/appHtml';
 import * as SplashScreen from 'expo-splash-screen';
 import { readDailySteps } from './native/healthSteps';
+import Purchases from 'react-native-purchases';
+import { createTestBilling } from './native/revenueCat';
+const testBilling = createTestBilling(Purchases);
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -117,6 +120,13 @@ async function handleMessage(raw, web, reload) {
   let msg;
   try { msg = JSON.parse(raw); } catch { return; }
   if (!msg || typeof msg.id !== 'string') return;
+  if (msg.type === 'revenuecat') {
+    let result;
+    try { result = { id: msg.id, ...(await testBilling(msg)) }; }
+    catch (error) { result = { id: msg.id, userId: msg.userId, cancelled: !!error.userCancelled, error: error.userCancelled ? 'Purchase cancelled.' : String(error.message || 'Subscriptions are unavailable. Please try again.') }; }
+    if (web) web.injectJavaScript(`window.ntBillingResult&&window.ntBillingResult(${JSON.stringify(result)});true;`);
+    return;
+  }
   if (msg.type === 'reload') { reload(); return; }
   if (msg.type === 'pick') { await pickPhoto(msg.id, web); return; }
   if (msg.type === 'google') { await googleSignIn(msg.url, web); return; }
