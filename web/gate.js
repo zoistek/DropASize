@@ -374,7 +374,7 @@
     document.body.appendChild(w);
     w.onclick=async function(e){var a=e.target.getAttribute&&e.target.getAttribute('data-a');if(!a&&e.target!==w)return;w.remove();
       if(a==='hide'||a==='report'){var h=hiddenIds();if(h.indexOf(m.id)<0){h.push(m.id);localStorage.setItem('nt-hidden',JSON.stringify(h))}}
-      if(a==='report'){var why=prompt('What’s the problem? (optional)','');if(why===null)why='';
+      if(a==='report'){var why=await window.ntPrompt('What’s the problem? (optional)','');if(why===null)why='';
         try{await rest('POST','reports',{user_id:session.user.id,kind:'member',target:m.id,content:String(m.name||'').slice(0,200),reason:why.trim().slice(0,1000)},{Prefer:'return=minimal'});window.ntToast('Reported and hidden. Your coach will review it.')}catch(err){window.ntToast('Couldn\u2019t send the report. Please try again.')}}
       else if(a==='hide')window.ntToast('Hidden from your leaderboard and squad');
       if(a==='hide'||a==='report')try{window.dispatchEvent(new Event('nt-hidden'))}catch(x){}
@@ -512,9 +512,9 @@
 
   window.ntDeleteMyAccount=async function(){
     if(!session||!session.user){location.href=SITE_URL+'delete-account.html';return}
-    if(!confirm('Delete your account?\n\nThis permanently removes your login, profile, food and weight logs, photos, messages and everything else. It can\u2019t be undone.'))return;
-    var typed=prompt('To confirm, type DELETE');if(String(typed||'').trim().toUpperCase()!=='DELETE')return;
-    try{await window.ntDeleteServerData();alert('Your account and data have been deleted.')}catch(e){alert('Couldn\u2019t delete your account. Check your connection and try again.')}
+    if(!await window.ntConfirm('Delete your account?\n\nThis permanently removes your login, profile, food and weight logs, photos, messages and everything else. It can\u2019t be undone.'))return;
+    var typed=await window.ntPrompt('To confirm, type DELETE');if(String(typed||'').trim().toUpperCase()!=='DELETE')return;
+    try{await window.ntDeleteServerData();await window.ntAlert('Your account and data have been deleted.')}catch(e){await window.ntAlert('Couldn\u2019t delete your account. Check your connection and try again.')}
   };
   /* Deleted somewhere else (the web page, or by the coach)? Sign out here too. Only a missing account counts, not an expired login. */
   function gone(){saveSession(null);try{localStorage.clear()}catch(e){}reloadApp()}
@@ -538,7 +538,7 @@
     });
   }
   window.ntReportAI=async function(text){
-    var why=prompt(text?'What was wrong with this answer? (optional)':'Paste or describe the AI answer that was wrong, unsafe or offensive:','');
+    var why=await window.ntPrompt(text?'What was wrong with this answer? (optional)':'Paste or describe the AI answer that was wrong, unsafe or offensive:','');
     if(why===null)return false;
     if(!text&&!why.trim())return false;
     try{await rest('POST','reports',{user_id:session.user.id,kind:'ai',content:String(text||'').slice(0,4000),reason:why.trim().slice(0,1000)},{Prefer:'return=minimal'});window.ntToast('Thanks. Your coach will review it.');return true}
@@ -660,7 +660,7 @@
       rawSet.call(localStorage,'ntguest','1');reloadApp();return;
     }
     rawSet.call(localStorage,'ntguest','1');
-    window.ntShowLogin=function(){try{sessionStorage.setItem('ntlogin','1')}catch(e){}reloadApp()};
+    window.ntShowLogin=function(){try{localStorage.setItem('ntloginrequest','1')}catch(e){}reloadApp()};
     window.ntGoogle=googleStart;
     window.ntCreateAccount=async function(em,pwd){
       try{
@@ -790,7 +790,7 @@
         saveSession(null);showLogin('Please log in again.');return;
       }
     }
-    var wantLogin=false;try{wantLogin=sessionStorage.getItem('ntlogin')==='1';sessionStorage.removeItem('ntlogin')}catch(e){}
+    var wantLogin=lsGet('ntloginrequest')==='1';lsDel('ntloginrequest');try{wantLogin=wantLogin||sessionStorage.getItem('ntlogin')==='1';sessionStorage.removeItem('ntlogin')}catch(e){}
     if(!wantLogin&&lsGet(OWNER_KEY)===null){startQuiz(false);return}
     showLogin();
   }
