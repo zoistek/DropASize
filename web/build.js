@@ -12,6 +12,8 @@ function inject(markers, file) {
   const end = html.indexOf('\n</script>', start);
   html = html.slice(0, start) + code + html.slice(end);
 }
+if(!html.includes('/* DropASize dialogs:'))html=html.replace('<title>DropASize</title>','<title>DropASize</title>\n<script>\n/* DropASize dialogs: */\n</script>');
+inject(['/* DropASize dialogs:'], 'dialogs.js');
 inject(['/* DropASize icons:'], 'icons.js');
 inject(['/* DropASize app layer', '/* Nourish&Thrive app layer'], 'gate.js');
 fs.writeFileSync(path.join(dir, 'index.html'), html);

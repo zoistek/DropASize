@@ -3,13 +3,13 @@
     "name": "DropASize",
     "slug": "nourish-thrive",
     "scheme": "dropasize",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "backgroundColor": "#F4F6F2",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.zoistek.nourishthrive",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -60,16 +60,15 @@
           }
         }
       ],
-      "expo-splash-screen",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
+          "image": "./assets/icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF",
           "dark": {
-            "image": "./assets/splash-icon.png",
+            "image": "./assets/icon.png",
             "backgroundColor": "#FFFFFF"
           }
         }

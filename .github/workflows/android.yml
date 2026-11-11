@@ -82,4 +82,4 @@ jobs:
 
       - name: Build the APK on Expo
         if: steps.check.outputs.ready == 'yes'
-        run: eas build --platform android --profile preview --non-interactive
+        run: eas build --platform android --profile preview --non-interactive --clear-cache
