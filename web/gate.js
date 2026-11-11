@@ -129,6 +129,7 @@
     });
     lsSet(OWNER_KEY,user.id);
     if(newest)rawSet.call(localStorage,'ntlastpull',newest);
+    return rows||[];
   }
   function origSetSilent(k,v){try{rawSet.call(localStorage,k,v)}catch(e){}}
 
@@ -576,7 +577,8 @@
     var s=document.createElement('script');s.text=src.textContent;document.body.appendChild(s);
   }
   async function enter(user,password){
-    await pullFromCloud(user);
+    var rows=await pullFromCloud(user);
+    await finishGoogleQuiz(user,rows);
     origSetSilent('nt:session','in');
     applyCoachPlan();
     if(lsGet('nt:account')===null&&lsGet('nt:profile')!==null){
@@ -587,6 +589,7 @@
     window.ntSessionEmail=user.email;
     await Promise.all([loadRole(),loadLibrary(),loadCoachMeals(),loadAvatar()]);
     startApp();
+    window.dispatchEvent(new Event('nt-auth-ready'));
     setTimeout(hcBoot,600);
     setTimeout(showCoachNotes,1500);
     setTimeout(publishScore,4000);
@@ -601,8 +604,8 @@
   '.ntl label{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;color:#6B726E;margin:14px 0 7px}.ntl label:first-child{margin-top:0}'+
   '.ntl input{width:100%;box-sizing:border-box;border:0;border-radius:16px;padding:14px 16px;font-size:16px;background:#F4F6F2;color:#0F2418;font-family:inherit;box-shadow:inset 0 0 0 1px rgba(15,36,24,.06);transition:box-shadow .5s cubic-bezier(.32,.72,0,1),background .5s cubic-bezier(.32,.72,0,1)}'+
   '.ntl input:focus{outline:none;background:#fff;box-shadow:inset 0 0 0 1.5px var(--nt-brand,#0E351D),0 0 0 5px rgba(14,53,29,.08)}'+
-  '.ntl .go{width:100%;margin-top:22px;border:none;border-radius:999px;padding:15px 18px;font-size:15.5px;font-weight:700;color:#0E351D;background:#5DBC01;box-shadow:none;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:transform .5s cubic-bezier(.32,.72,0,1)}'+
-  '.ntl .go::after{content:"";width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.5) center/14px no-repeat url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%230E351D%27 stroke-width=%272%27 stroke-linecap=%27round%27%3E%3Cpath d=%27M5 12h14M13 6l6 6-6 6%27/%3E%3C/svg%3E");transition:transform .6s cubic-bezier(.32,.72,0,1)}'+
+  '.ntl .go{width:100%;margin-top:22px;border:none;border-radius:999px;padding:15px 56px;font-size:15.5px;font-weight:700;color:#0E351D;background:#5DBC01;box-shadow:none;font-family:inherit;cursor:pointer;position:relative;min-height:60px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;transition:transform .5s cubic-bezier(.32,.72,0,1)}'+
+  '.ntl .go::after{content:"";position:absolute;right:18px;top:50%;margin-top:-15px;width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.5) center/14px no-repeat url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%230E351D%27 stroke-width=%272%27 stroke-linecap=%27round%27%3E%3Cpath d=%27M5 12h14M13 6l6 6-6 6%27/%3E%3C/svg%3E");transition:transform .6s cubic-bezier(.32,.72,0,1)}'+
   '.ntl .go:active{transform:scale(.98)}.ntl .go:hover::after{transform:translateX(3px)}.ntl .go:disabled{opacity:.6}'+
   '.ntl .lnk{display:block;width:100%;background:none;border:none;color:#0F2418;font-weight:600;font-size:14px;margin-top:16px;font-family:inherit;cursor:pointer;opacity:.75}'+
   '.ntl .msg{margin-top:14px;font-size:13.5px;line-height:1.45;border-radius:14px;padding:11px 13px}'+
@@ -612,7 +615,30 @@
   '@media (min-width:640px){.ntl>p,.ntl-legal{color:#DDEEE5}.ntl-legal a{color:#B7F07A;text-decoration:underline;text-underline-offset:2px}.ntl>.lnk{color:#F4F6F2;opacity:1}}'+
   '.ntl .err{background:#FBEDEA;color:#9A3422}.ntl .ok{background:#EEF8E3;color:#0E351D}';
 
-  function googleStart(){
+  var QUIZ_PENDING='ntonboardingpending';
+  var QUIZ_KEYS=['account','profile','daily-target','training-prefs','training-plan','user-locale'];
+  function stageGoogleQuiz(){
+    var data={};QUIZ_KEYS.forEach(function(k){var raw=lsGet('nt:'+k);if(raw!==null)data[k]=JSON.parse(raw)});
+    if(!data.profile||!data.profile.consent||!data['daily-target'])throw new Error('Please finish the quiz before continuing with Google.');
+    if(data.account)delete data.account.pw;
+    // Keep the finished quiz outside account storage until Google identifies its owner.
+    rawSet.call(localStorage,QUIZ_PENDING,JSON.stringify({at:Date.now(),data:data}));
+  }
+  async function finishGoogleQuiz(user,rows){
+    var raw=lsGet(QUIZ_PENDING);if(!raw)return;
+    var pending;try{pending=JSON.parse(raw)}catch(e){lsDel(QUIZ_PENDING);return}
+    if(!pending||!pending.data||Date.now()-pending.at>3600000||!pending.data.profile||!pending.data['daily-target']){lsDel(QUIZ_PENDING);return}
+    var existing=(rows||[]).find(function(r){return r.key==='profile'}),profile=null;
+    try{profile=existing&&(typeof existing.value==='string'?JSON.parse(existing.value):existing.value)}catch(e){}
+    // An established Google account keeps its existing plan and goes straight into the app.
+    if(!(profile&&profile.name&&profile.age&&profile.height&&profile.weight&&profile.goal)){
+      QUIZ_KEYS.forEach(function(k){if(pending.data[k]===undefined)return;var val=pending.data[k];if(k==='account'){val=Object.assign({},val,{email:user.email});delete val.pw}rawSet.call(localStorage,'nt:'+k,JSON.stringify(val));markDirty(k)});
+      await flush();
+    }
+    lsDel(QUIZ_PENDING);
+  }
+  function googleStart(options){
+    if(options&&options.completeOnboarding)stageGoogleQuiz();else lsDel(QUIZ_PENDING);
     if(window.ReactNativeWebView){
       /* Google blocks sign-in inside app web views, so the phone app opens it in the system browser. */
       window.ReactNativeWebView.postMessage(JSON.stringify({type:'google',id:'google',url:SB_URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(APP_RETURN)}));return;
@@ -621,7 +647,7 @@
   }
   /* ---------- quiz first: new members answer the quiz, then make their account at the end ---------- */
   function startQuiz(fresh){
-    if(fresh){ /* "New here?" on a phone someone used before: start clean, nobody sees the last member's data */
+    if(fresh){lsDel(QUIZ_PENDING); /* "New here?" on a phone someone used before: start clean, nobody sees the last member's data */
       var old=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf('nt:')===0||k.indexOf('nt-')===0))old.push(k)}}catch(e){}
       old.forEach(function(k){try{rawRemove.call(localStorage,k)}catch(e){}});[OWNER_KEY,DIRTY_KEY,'ntdataver','ntlastpull'].forEach(function(k){try{rawRemove.call(localStorage,k)}catch(e){}});dirty={};
       rawSet.call(localStorage,'ntguest','1');location.reload();return;
