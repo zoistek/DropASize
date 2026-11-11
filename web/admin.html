@@ -232,7 +232,7 @@ function go(tab,member){state.tab=tab;state.member=member||null;location.hash=me
 window.addEventListener('hashchange',function(){
   var h=location.hash.slice(1);
   if(h.indexOf('member-')===0){if(state.member!==h.slice(7)){state.tab='members';state.member=h.slice(7);render()}}
-  else if(['members','library','plans','community','squad','reports'].indexOf(h)>=0&&(h!==state.tab||state.member)){state.tab=h;state.member=null;render()}
+  else if(['members','library','meals','plans','community','squad','reports'].indexOf(h)>=0&&(h!==state.tab||state.member)){state.tab=h;state.member=null;render()}
 });
 
 /* ---------- login ---------- */
@@ -260,13 +260,13 @@ async function start(){
   }catch(e){saveSession(null);loginView(e.message);return}
   var h=location.hash.slice(1);
   if(h.indexOf('member-')===0){state.tab='members';state.member=h.slice(7)}
-  else if(['members','library','plans','community','squad','reports','admins'].indexOf(h)>=0)state.tab=h;
+  else if(['members','library','meals','plans','community','squad','reports','admins'].indexOf(h)>=0)state.tab=h;
   render();
 }
 
 /* ---------- shell ---------- */
 function shell(inner){
-  var tabs=[['members','Members'],['library','Recipes'],['plans','Training plans'],['squad','Squads & leaderboard'],['community','Community'],['reports','Reports']];
+  var tabs=[['members','Members'],['library','Recipes'],['meals','Coach\u2019s meals'],['plans','Training plans'],['squad','Squads & leaderboard'],['community','Community'],['reports','Reports']];
   if(isMainAdmin())tabs.push(['admins','Admins']);
   app.innerHTML='<header class="top"><div class="top-in"><div class="brand"><img src="'+NT_LOGO+'" alt="DropASize"><small>Coach</small></div>'+
     '<nav class="tabs">'+tabs.map(function(t){return '<button class="tab" data-tab="'+t[0]+'" aria-current="'+(state.tab===t[0])+'">'+t[1]+'</button>'}).join('')+'</nav>'+
@@ -281,6 +281,7 @@ function render(){
   if(state.tab==='squad')return squadView();
   if(state.tab==='community')return recipesView();
   if(state.tab==='library')return libraryView();
+  if(state.tab==='meals')return coachMealsView();
   if(state.tab==='plans')return plansView();
   if(state.tab==='reports')return reportsView();
   if(state.tab==='admins')return adminsView();
@@ -974,6 +975,136 @@ async function leaderboardCard(el){
   draw();
 }
 
+
+/* ---------- Coach's meals (sized to each member's calories in the app) ---------- */
+var cm={rows:[],foods:{},list:0,sel:{},q:'',meal:'',cu:''};
+var CM_DIETS=['Non-veg','Vegetarian','Vegan'],CM_CARBS=['Low carb','Moderate'];
+async function cmLoad(){
+  var r=await Promise.all([rest('GET','coach_meals?select=*&order=id.asc&limit=5000'),rest('GET','coach_foods?select=*&limit=5000'),rest('GET','coach_food_list?select=id&limit=5000')]);
+  cm.rows=r[0]||[];cm.foods={};(r[1]||[]).forEach(function(f){cm.foods[f.name.toLowerCase()]=f});cm.list=(r[2]||[]).length;
+}
+/* totals for the base portion from the foods table; unknown foods are reported, not guessed */
+function cmTotals(ing){var t={kcal:0,protein:0,carbs:0,fat:0},miss=[];
+  ing.forEach(function(x){var f=cm.foods[String(x[0]).toLowerCase()];if(!f){miss.push(x[0]);return}['kcal','protein','carbs','fat'].forEach(function(k){t[k]+=Number(f[k])*x[1]/100})});
+  return {kcal:Math.round(t.kcal),protein:Math.round(t.protein*10)/10,carbs:Math.round(t.carbs*10)/10,fat:Math.round(t.fat*10)/10,miss:miss}}
+function cmIngText(ing){return (ing||[]).map(function(x){return x[0]+', '+x[1]}).join('\n')}
+function cmIngParse(t){var bad=[],out=[];t.split('\n').map(function(l){return l.trim()}).filter(Boolean).forEach(function(l){var m=l.match(/^(.*?)[,;\t]\s*([\d.]+)\s*g?$/i);if(m&&m[1].trim()&&+m[2]>0)out.push([m[1].trim(),+m[2]]);else bad.push(l)});return {ing:out,bad:bad}}
+function cmMealCase(m){m=String(m||'').trim().toLowerCase();return m.charAt(0).toUpperCase()+m.slice(1)}
+async function coachMealsView(){
+  shell('<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Coach\u2019s meals</span><h2 style="margin:8px 0 0">Meals sized to each member\u2019s calories</h2><div class="small mut" id="cmc" style="margin-top:6px"></div></div>'+
+    '<div class="row"><button class="btn ghost sm" id="cmx">Export CSV</button><label class="btn ghost sm" style="cursor:pointer">Upload CSV files<input type="file" id="cmi" accept=".csv,text/csv" multiple hidden></label><button class="btn sm" id="cmn">Add meal</button></div></div>'+
+    '<p class="small mut" style="margin:12px 0 0">Upload any of: <b>recipes.csv</b>, <b>recipe_ingredients.csv</b>, <b>foods.csv</b> (nutrition per 100 g, used to size meals), <b>food_list.csv</b>. Pick several at once. Meals with the same id are updated.</p>'+
+    '<div class="row" style="margin-top:16px"><input class="i" id="cmq" placeholder="Search meals" style="max-width:260px"><select class="i" id="cmm" style="max-width:150px"><option value="">All meals</option>'+MEALS.map(function(m){return '<option>'+m+'</option>'}).join('')+'</select><select class="i" id="cmu" style="max-width:170px"><option value="">All cuisines</option></select></div>'+
+    '<div id="cmbar" class="bulk" hidden><span id="cmcount"></span><button class="btn ghost sm" id="cmall">Select all shown</button><button class="btn ghost sm" id="cmnone">Clear</button><button class="btn danger sm" id="cmdel">Delete selected</button></div>'+
+    '<div id="cml"><div class="empty">Loading\u2026</div></div></div>');
+  try{await cmLoad()}catch(e){$('#cml').innerHTML='<div class="err">'+esc(e.message)+'</div>';return}
+  function cuisines(){var s={};cm.rows.forEach(function(r){if(r.cuisine)s[r.cuisine]=1});return Object.keys(s).sort()}
+  function shown(){var q=cm.q.toLowerCase();return cm.rows.filter(function(r){return (!cm.meal||r.meal===cm.meal)&&(!cm.cu||r.cuisine===cm.cu)&&(!q||(r.name+' '+r.cuisine+' '+r.diet+' '+r.id).toLowerCase().indexOf(q)>=0)})}
+  function bar(){var n=Object.keys(cm.sel).length;$('#cmbar').hidden=!n;$('#cmcount').textContent=n+' selected'}
+  function draw(){
+    $('#cmc').textContent=cm.rows.length?cm.rows.length+' meals \u00b7 '+Object.keys(cm.foods).length+' foods \u00b7 '+cm.list+' in the food list':'No meals uploaded yet. Members see the built-in 100 meals until you upload recipes.csv.';
+    var u=$('#cmu'),cur=u.value;u.innerHTML='<option value="">All cuisines</option>'+cuisines().map(function(c){return '<option'+(c===cur?' selected':'')+'>'+esc(c)+'</option>'}).join('');
+    var list=shown();
+    $('#cml').innerHTML=list.length?list.map(function(r){
+      return '<div class="row" style="padding:10px 0;border-top:1px solid var(--line);gap:12px;flex-wrap:nowrap"><input type="checkbox" data-cs="'+esc(r.id)+'"'+(cm.sel[r.id]?' checked':'')+' aria-label="Select '+esc(r.name)+'">'+
+        '<button class="btn ghost sm" data-ce="'+esc(r.id)+'" style="flex:1;text-align:left;justify-content:flex-start;white-space:normal"><span><b>'+esc(r.name)+'</b><br><span class="small mut">'+esc(r.id)+' \u00b7 '+esc(r.cuisine)+' \u00b7 '+esc(r.meal)+' \u00b7 '+esc(r.diet)+(r.published?'':' \u00b7 hidden')+'</span></span></button>'+
+        '<span class="small" style="white-space:nowrap">'+Math.round(r.kcal)+' kcal \u00b7 '+r.protein+' g protein</span></div>'}).join(''):'<div class="empty">'+(cm.rows.length?'No meals match.':'Upload the CSV files to start.')+'</div>';
+    $$('[data-cs]').forEach(function(c){c.onchange=function(){if(c.checked)cm.sel[c.dataset.cs]=1;else delete cm.sel[c.dataset.cs];bar()}});
+    $$('[data-ce]').forEach(function(b){b.onclick=function(){coachMealEditor(cm.rows.find(function(r){return r.id===b.dataset.ce}),draw)}});
+    bar();
+  }
+  $('#cmq').oninput=function(){cm.q=this.value;draw()};
+  $('#cmm').onchange=function(){cm.meal=this.value;draw()};
+  $('#cmu').onchange=function(){cm.cu=this.value;draw()};
+  $('#cmall').onclick=function(){shown().forEach(function(r){cm.sel[r.id]=1});draw()};
+  $('#cmnone').onclick=function(){cm.sel={};draw()};
+  $('#cmdel').onclick=async function(){
+    var ids=Object.keys(cm.sel);if(!ids.length)return;
+    if(!confirm('Delete '+ids.length+' meal'+(ids.length>1?'s':'')+'? Members will no longer see them. This can\u2019t be undone.'))return;
+    this.disabled=true;
+    try{for(var i=0;i<ids.length;i+=50){var part=ids.slice(i,i+50);await rest('DELETE','coach_meals?id=in.('+enc(part.map(function(x){return '"'+x+'"'}).join(','))+')')}
+      cm.rows=cm.rows.filter(function(r){return !cm.sel[r.id]});cm.sel={};toast('Deleted '+ids.length);draw()}catch(e){toast(e.message)}
+    this.disabled=false;
+  };
+  $('#cmn').onclick=function(){coachMealEditor(null,draw)};
+  $('#cmx').onclick=function(){
+    var rc=[['id','cuisine','meal','diet','name','base_kcal','protein_g','carbs_g','fat_g','carb_level','method']].concat(cm.rows.map(function(r){return [r.id,r.cuisine,r.meal.toLowerCase(),r.diet,r.name,r.kcal,r.protein,r.carbs,r.fat,r.carb_level,r.method]}));
+    var ri=[['recipe_id','position','ingredient','base_grams']];cm.rows.forEach(function(r){(r.ingredients||[]).forEach(function(x,i){ri.push([r.id,i+1,x[0],x[1]])})});
+    var csv=function(rows){return rows.map(function(c){return c.map(function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(',')}).join('\r\n')+'\r\n'};
+    download('recipes.csv',csv(rc));setTimeout(function(){download('recipe_ingredients.csv',csv(ri))},400);
+  };
+  $('#cmi').onchange=async function(){
+    var files=[].slice.call(this.files);this.value='';if(!files.length)return;
+    var got={},skipped=[];
+    for(var i=0;i<files.length;i++){var rows=parseCSV(await files[i].text());if(rows.length<2){skipped.push(files[i].name);continue}
+      var h=rows[0].map(function(x){return x.replace(/^\ufeff/,'').trim().toLowerCase()}),col=function(n){return h.indexOf(n)};
+      var objs=rows.slice(1).filter(function(c){return c.some(function(v){return String(v).trim()})}).map(function(c){var o={};h.forEach(function(k,j){o[k]=c[j]==null?'':String(c[j]).trim()});return o});
+      if(col('recipe_id')>=0&&col('base_grams')>=0)got.ing=objs;
+      else if(col('id')>=0&&col('name')>=0&&col('meal')>=0)got.rec=objs;
+      else if(col('kcal_per_100g')>=0)got.foods=objs;
+      else if(col('category')>=0&&col('serving')>=0)got.list=objs;
+      else skipped.push(files[i].name)}
+    var ingBy={};(got.ing||[]).forEach(function(o){(ingBy[o.recipe_id]=ingBy[o.recipe_id]||[]).push([+o.position||0,o.ingredient,+o.base_grams||0])});
+    Object.keys(ingBy).forEach(function(k){ingBy[k]=ingBy[k].sort(function(a,b){return a[0]-b[0]}).filter(function(x){return x[1]&&x[2]>0}).map(function(x){return [x[1],x[2]]})});
+    var meals=(got.rec||[]).filter(function(o){return o.id&&o.name}).map(function(o){var old=cm.rows.find(function(r){return r.id===o.id});
+      return {id:o.id,cuisine:o.cuisine||'',meal:cmMealCase(o.meal)||'Dinner',diet:o.diet||'Non-veg',name:o.name,method:o.method||'',carb_level:o.carb_level||'',kcal:+o.base_kcal||0,protein:+o.protein_g||0,carbs:+o.carbs_g||0,fat:+o.fat_g||0,
+        ingredients:ingBy[o.id]||(old&&old.ingredients)||[],published:old?old.published:true,updated_at:new Date().toISOString()}});
+    var ingOnly=got.rec?[]:Object.keys(ingBy).filter(function(k){return cm.rows.some(function(r){return r.id===k})});
+    var foods=(got.foods||[]).filter(function(o){return o.name}).map(function(o){return {name:o.name,food_group:o.food_group||'',diet:o.diet||'',kcal:+o.kcal_per_100g||0,protein:+o.protein_per_100g||0,carbs:+o.carbs_per_100g||0,fat:+o.fat_per_100g||0}});
+    var list=(got.list||[]).filter(function(o){return o.name}).map(function(o,i){return {position:i,category:o.category||'',name:o.name,diet:o.diet||'',serving:o.serving||'',serving_g:+o.serving_g||0,kcal:+o.kcal||0,protein:+o.protein_g||0,carbs:+o.carbs_g||0,fat:+o.fat_g||0,source:o.source||'',notes:o.notes||''}});
+    var noIng=meals.filter(function(m){return !m.ingredients.length}).length;
+    var msg=[];if(meals.length)msg.push(meals.length+' meals ('+meals.filter(function(m){return cm.rows.some(function(r){return r.id===m.id})}).length+' update existing ones)');
+    if(ingOnly.length)msg.push('ingredients for '+ingOnly.length+' existing meals');if(foods.length)msg.push(foods.length+' foods');if(list.length)msg.push(list.length+' food-list items (replaces the current list)');
+    if(!msg.length){toast(skipped.length?'Not recognised: '+skipped.join(', '):'Nothing to upload');return}
+    if(!confirm('Upload '+msg.join(', ')+'?'+(noIng?'\n\n'+noIng+' meals have no ingredients yet (add recipe_ingredients.csv), so they can\u2019t be sized. They\u2019ll be saved hidden.':'')+(skipped.length?'\n\nNot recognised: '+skipped.join(', '):'')))return;
+    meals.forEach(function(m){if(!m.ingredients.length)m.published=false});
+    try{
+      for(var a=0;a<foods.length;a+=200)await rest('POST','coach_foods?on_conflict=name',foods.slice(a,a+200),{Prefer:'resolution=merge-duplicates,return=minimal'});
+      for(var b=0;b<meals.length;b+=100)await rest('POST','coach_meals?on_conflict=id',meals.slice(b,b+100),{Prefer:'resolution=merge-duplicates,return=minimal'});
+      for(var c=0;c<ingOnly.length;c++)await rest('PATCH','coach_meals?id=eq.'+enc(ingOnly[c]),{ingredients:ingBy[ingOnly[c]],updated_at:new Date().toISOString()},{Prefer:'return=minimal'});
+      if(list.length){await rest('DELETE','coach_food_list?id=gt.0');for(var d=0;d<list.length;d+=200)await rest('POST','coach_food_list',list.slice(d,d+200),{Prefer:'return=minimal'})}
+      toast('Uploaded');await cmLoad();draw();
+    }catch(e){toast(e.message)}
+  };
+  draw();
+}
+function coachMealEditor(rec,done){
+  var isNew=!rec;rec=rec||{id:'',name:'',meal:'Dinner',cuisine:'',diet:'Non-veg',carb_level:'Low carb',method:'',ingredients:[],published:true};
+  var opt=function(list,v){return list.map(function(x){return '<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>'}).join('')};
+  var w=document.createElement('div');w.className='modal';w.setAttribute('role','dialog');w.setAttribute('aria-label',isNew?'Add meal':'Edit meal');
+  w.innerHTML='<div class="sheet"><div class="row" style="justify-content:space-between"><h2 style="margin:0">'+(isNew?'Add meal':'Edit meal')+'</h2><button class="btn ghost sm" id="cx">Close</button></div>'+
+    '<label class="f" for="cn">Name</label><input class="i" id="cn" maxlength="120" value="'+esc(rec.name)+'">'+
+    '<div class="fields"><div><label class="f" for="cmeal">Meal</label><select class="i" id="cmeal">'+opt(MEALS,rec.meal)+'</select></div>'+
+    '<div><label class="f" for="ccu">Cuisine</label><input class="i" id="ccu" value="'+esc(rec.cuisine)+'"></div>'+
+    '<div><label class="f" for="cdi">Diet</label><select class="i" id="cdi">'+opt(CM_DIETS,rec.diet)+'</select></div>'+
+    '<div><label class="f" for="ccl">Carbs</label><select class="i" id="ccl">'+opt(CM_CARBS,rec.carb_level)+'</select></div></div>'+
+    '<label class="f" for="cing">Ingredients <span class="mut">(one per line: food, grams raw for one base portion. Foods must be in foods.csv.)</span></label><textarea class="i" id="cing" style="min-height:150px">'+esc(cmIngText(rec.ingredients))+'</textarea>'+
+    '<div class="small" id="ctot" style="margin-top:6px"></div>'+
+    '<label class="f" for="cme">Method</label><textarea class="i" id="cme">'+esc(rec.method)+'</textarea>'+
+    '<label class="row small" style="margin-top:12px;gap:8px"><input type="checkbox" id="cpub"'+(rec.published!==false?' checked':'')+'> Show to members</label>'+
+    '<div class="row end">'+(isNew?'':'<button class="btn danger" id="cdel">Delete</button><span class="grow"></span>')+'<button class="btn" id="csv">Save meal</button></div></div>';
+  document.body.appendChild(w);
+  function close(){w.remove();done&&done()}
+  function tot(){var p=cmIngParse($('#cing').value),t=cmTotals(p.ing);
+    $('#ctot').innerHTML=(p.ing.length?'<b>'+t.kcal+' kcal</b> \u00b7 P '+t.protein+' g \u00b7 C '+t.carbs+' g \u00b7 F '+t.fat+' g for the base portion (the app resizes it for each member).':'')+
+      (t.miss.length?'<div class="err" style="margin-top:6px">Not in foods: '+esc(t.miss.join(', '))+'. Check the spelling or upload foods.csv with them.</div>':'')+
+      (p.bad.length?'<div class="err" style="margin-top:6px">Can\u2019t read: '+esc(p.bad.join(' | '))+' (write it like \u201cChicken breast, 150\u201d)</div>':'');return {p:p,t:t}}
+  tot();$('#cing').oninput=tot;
+  $('#cx').onclick=close;w.onclick=function(e){if(e.target===w)close()};
+  if(!isNew)$('#cdel').onclick=async function(){if(!confirm('Delete \u201c'+rec.name+'\u201d? This can\u2019t be undone.'))return;try{await rest('DELETE','coach_meals?id=eq.'+enc(rec.id));cm.rows=cm.rows.filter(function(r){return r.id!==rec.id});toast('Deleted');close()}catch(e){toast(e.message)}};
+  $('#csv').onclick=async function(){
+    var name=$('#cn').value.trim();if(name.length<2){toast('Add a name');return}
+    var r=tot();if(!r.p.ing.length){toast('Add at least one ingredient');return}if(r.p.bad.length||r.t.miss.length){toast('Fix the ingredients first');return}
+    var data={name:name,meal:$('#cmeal').value,cuisine:$('#ccu').value.trim(),diet:$('#cdi').value,carb_level:$('#ccl').value,method:$('#cme').value.trim(),ingredients:r.p.ing,
+      kcal:r.t.kcal,protein:r.t.protein,carbs:r.t.carbs,fat:r.t.fat,published:$('#cpub').checked,updated_at:new Date().toISOString()};
+    this.disabled=true;
+    try{
+      if(isNew){var id=(slug(data.cuisine||'meal').slice(0,3).toUpperCase()||'CM')+Date.now().toString(36).slice(-5).toUpperCase();data.id=id;await rest('POST','coach_meals',[data],{Prefer:'return=minimal'});cm.rows.push(data)}
+      else{await rest('PATCH','coach_meals?id=eq.'+enc(rec.id),data,{Prefer:'return=minimal'});Object.assign(rec,data)}
+      toast('Saved');close();
+    }catch(e){toast(e.message);this.disabled=false}
+  };
+}
 
 /* ---------- Reports from members (AI answers, people, recipes) ---------- */
 async function reportsView(){

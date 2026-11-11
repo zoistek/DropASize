@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { AppState, BackHandler, Linking, Platform, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, AppState, BackHandler, Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -8,6 +8,10 @@ import * as WebBrowser from 'expo-web-browser';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import appHtml from './web/appHtml';
+import * as SplashScreen from 'expo-splash-screen';
+import { readDailySteps } from './native/healthSteps';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // The app's own address inside the phone. It never loads from the internet;
 // it just gives the page a stable home so its saved data stays put.
@@ -87,21 +91,6 @@ async function hcStatus() {
   } catch { return 'none'; }
 }
 
-// Today plus the last 7 days, one total per local day: { 'YYYY-MM-DD': steps }.
-async function hcReadSteps(HC) {
-  const granted = await HC.getGrantedPermissions();
-  if (!granted.some((p) => p.recordType === 'Steps' && p.accessType === 'read')) return { error: 'denied' };
-  const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - 7);
-  const rows = await HC.aggregateGroupByPeriod({
-    recordType: 'Steps',
-    timeRangeFilter: { operator: 'between', startTime: start.toISOString(), endTime: new Date().toISOString() },
-    timeRangeSlicer: { period: 'DAYS', length: 1 },
-  });
-  const days = {};
-  rows.forEach((r) => { days[String(r.startTime).slice(0, 10)] = Math.round(Number(r.result && r.result.COUNT_TOTAL) || 0); });
-  return { days, at: Date.now() };
-}
-
 async function healthConnect(action, web) {
   const send = (r) => web && web.injectJavaScript(`window.ntHCResult&&window.ntHCResult(${JSON.stringify(r)});true;`);
   const status = await hcStatus();
@@ -118,16 +107,17 @@ async function healthConnect(action, web) {
     // Revoking only takes full effect after the app restarts; the page stops syncing straight away.
     if (action === 'disconnect') { await HC.revokeAllPermissions().catch(() => {}); return send({ action, status }); }
     if (action === 'connect') await HC.requestPermission(STEPS);
-    if (action === 'connect' || action === 'sync') return send({ action, status, ...(await hcReadSteps(HC)) });
+    if (action === 'connect' || action === 'sync') return send({ action, status, ...(await readDailySteps(HC)) });
   } catch (e) {
     send({ action, status, error: String((e && e.message) || e).slice(0, 200) });
   }
 }
 
-async function handleMessage(raw, web) {
+async function handleMessage(raw, web, reload) {
   let msg;
   try { msg = JSON.parse(raw); } catch { return; }
   if (!msg || typeof msg.id !== 'string') return;
+  if (msg.type === 'reload') { reload(); return; }
   if (msg.type === 'pick') { await pickPhoto(msg.id, web); return; }
   if (msg.type === 'google') { await googleSignIn(msg.url, web); return; }
   if (msg.type === 'hc') { await healthConnect(String(msg.action), web); return; }
@@ -150,6 +140,18 @@ async function handleMessage(raw, web) {
 
 export default function App() {
   const webRef = useRef(null);
+  const [webKey, setWebKey] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const animation = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 0, duration: 800, useNativeDriver: true }),
+    ]));
+    animation.start();
+    return () => animation.stop();
+  }, [pulse]);
+  const reload = () => { canGoBack.current = false; setLoading(true); setWebKey(k => k + 1); };
   const canGoBack = useRef(false);
 
   useEffect(() => {
@@ -173,10 +175,12 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']} onLayout={() => { SplashScreen.hideAsync().catch(() => {}); }}>
         <StatusBar style="dark" />
         <WebView
+          key={webKey}
           ref={webRef}
+          onLoadEnd={() => { setLoading(false); SplashScreen.hideAsync().catch(() => {}); }}
           style={styles.web}
           originWhitelist={['*']}
           source={{ html: appHtml, baseUrl: BASE_URL }}
@@ -187,7 +191,7 @@ export default function App() {
           allowsInlineMediaPlayback
           setSupportMultipleWindows={false}
           overScrollMode="never"
-          onMessage={(e) => { handleMessage(e.nativeEvent.data, webRef.current).catch(() => {}); }}
+          onMessage={(e) => { handleMessage(e.nativeEvent.data, webRef.current, reload).catch(() => {}); }}
           onNavigationStateChange={(s) => { canGoBack.current = s.canGoBack; }}
           onShouldStartLoadWithRequest={(req) => {
             if (isOwnPage(req.url)) return true;
@@ -196,12 +200,18 @@ export default function App() {
             return false;
           }}
         />
+        {loading && <View style={styles.loading} accessibilityLabel="Loading DropASize">
+          <Animated.Image source={require('./assets/icon.png')} style={{ width: 180, height: 180, transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1.04] }) }], opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }} />
+          <Text style={styles.loadingText}>Preparing your day…</Text>
+        </View>}
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  loading: { ...StyleSheet.absoluteFillObject, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  loadingText: { color: '#0E351D', fontSize: 16, fontWeight: '600' },
   screen: { flex: 1, backgroundColor: BG },
   web: { flex: 1, backgroundColor: BG },
 });

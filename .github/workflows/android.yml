@@ -11,6 +11,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'assets/**'
+      - 'native/**'
+      - 'plugins/**'
       - 'web/**'
   workflow_dispatch:
 
