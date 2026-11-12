@@ -10,6 +10,8 @@ module.exports=function(html){
     value('fi').forEach(n=>add({n}));Object.values(value('Nt')).flat().forEach(add);
   }});
   if(items.size<50)throw Error('Exercise catalog extraction failed');
+  const art=JSON.parse(html.match(/var NT_ART=(\{[^\n]+?\});/)[1]);
+  for(const item of items.values()){const key=item.n.replace(/ · (left|right)$/,'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');const pair=art[key];if(pair)item.images={before:'https://zoistek.github.io/DropASize/exercises/'+pair[0]+'.webp',after:'https://zoistek.github.io/DropASize/exercises/'+(pair[1]||pair[0])+'.webp'}}
   const catalog={exercises:[...items.values()].sort((a,b)=>a.n.localeCompare(b.n)),rests:[...rests].sort((a,b)=>a-b).map(s=>({id:'rest-'+s,n:'Rest',s,isRest:true,r:'',cue:'Rest and breathe.'}))};
   fs.writeFileSync(path.join(__dirname,'pages/training-catalog.json'),JSON.stringify(catalog,null,2)+'\n');
   return catalog;

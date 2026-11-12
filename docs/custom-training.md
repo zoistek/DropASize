@@ -10,6 +10,14 @@ rest slots. Each addition, removal or duration change updates used/remaining tim
 Over-budget sessions cannot be saved or assigned until corrected. Sessions may be
 shorter than their target; the member sees the actual scheduled duration.
 
+Training plans > All exercises opens the shared library with name search,
+View / edit and Delete for built-in and custom exercises. New custom exercises
+are stored in the existing config/custom-exercises database document and appear
+in this library and the custom builder. Built-in edits override catalog entries
+by stable ID, preserving their illustration URLs. Deletion hides an entry from
+future custom selections; Show deleted exercises allows Restore. Existing default
+workouts and saved/assigned plan snapshots are unchanged.
+
 The generated catalog contains 175 existing exercise names and the rest durations
 already present in app workouts. `web/buildTrainingCatalog.js` extracts these from
 the app's canonical definitions during `node web/build.js`, so the admin library
@@ -78,6 +86,8 @@ notification still needs a user-controlled end-to-end check.
 `node tools/tests/custom-training.test.js` covers timing, overrun validation,
 assignment snapshots, rest slots without implicit extra rests, one-to-seven-day
 schedules, existing player/log wiring, custom artwork and acknowledged notices.
+`node tools/tests/exercise-library.test.js` covers library merging, name search,
+persistent edits, deletion/restoration and preserved artwork.
 `node tools/tests/custom-training-save.test.js` covers immediate exercise saving,
 failed-save retry, duplicate prevention and successful save/assign popup closing.
 `node tools/tests/training-images.test.js` covers auth, two-image requests, redo
