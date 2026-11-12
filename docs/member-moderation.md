@@ -19,7 +19,7 @@ The policies block banned/deleted users even if an access JWT has not yet expire
 This is a **shared backend**, so database changes apply to the installed app too.
 No existing user records are deleted by the migration itself.
 
-Explicit approval is needed before retrying this schema deployment. The risk is
+The migration now validates profile/saved-data access for every existing active account and coach dashboard access before committing; any failure aborts the transaction. Automatic review still rejected the attempt after the user’s conditional approval ("as long as this doesn’t break my app and it’s reversible"), because it requires explicit approval of the live migration. No schema changes were applied. Explicit approval is needed before retrying this schema deployment. The risk is
 that incorrect access rules could interrupt existing reads/writes. Fourteen
 existing accounts were checked during preparation; none was banned.
 

@@ -58,4 +58,25 @@ language plpgsql security definer set search_path='' as $$ begin
 end $$;
 revoke all on function public.moderation_revoke_sessions(uuid) from public,anon,authenticated;
 grant execute on function public.moderation_revoke_sessions(uuid) to service_role;
+-- Abort this entire migration if normal access changes for any existing active account.
+do $$ declare member record; visible_count bigint; state text; total_members bigint; begin
+  select count(*) into total_members from public.profiles;
+  for member in select p.id,p.email,p.role,(select count(*) from public.user_data d where d.user_id=p.id) as saved_count
+    from public.profiles p join auth.users u on u.id=p.id where u.banned_until is null or u.banned_until<=now()
+  loop
+    perform set_config('request.jwt.claims',jsonb_build_object('sub',member.id,'role','authenticated','email',member.email)::text,true);
+    execute 'set local role authenticated';
+    select public.account_status() into state;
+    if state<>'active' then raise exception 'Active account status validation failed'; end if;
+    select count(*) into visible_count from public.profiles where id=member.id;
+    if visible_count<>1 then raise exception 'Active profile access validation failed'; end if;
+    select count(*) into visible_count from public.user_data where user_id=member.id;
+    if visible_count<>member.saved_count then raise exception 'Active saved-data access validation failed'; end if;
+    if member.role='coach' then
+      select count(*) into visible_count from public.admin_users();
+      if visible_count<>total_members then raise exception 'Coach dashboard access validation failed'; end if;
+    end if;
+    execute 'reset role';
+  end loop;
+end $$;
 commit;
