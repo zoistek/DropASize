@@ -43,6 +43,11 @@ understands these custom templates.
 
 ## Member workflow
 
+The member keeps the full Train screen (week calendar, weight-loss protocol, Learn in 30
+seconds, Extras). The coach's days show as "Coach" in the calendar and open the custom
+session; other days are rest days. "Change" is hidden so the member cannot overwrite the
+coach's plan, and Start waits until the plan's start date.
+
 The assigned session uses the existing workout timer, explicit rest screens,
 illustrations and workout logging. Custom exercise images are displayed in the
 same illustration component. Custom schedules support one to seven days without
