@@ -38,7 +38,12 @@ endpoint and UI. No user data or old counters need restoring. The unused
 
 ## RevenueCat Test Store connection (`test` only)
 
-Open Your account > DropASize Premium in the Android test build to fetch the current
+Release APKs disable Test Store calls before the native SDK is configured, preventing
+RevenueCat's intentional release-build termination. Test Store purchases require a
+debug development build; the internal `preview` profile is a release APK and cannot
+be used for them.
+
+Open Your account > DropASize Premium in an Android debug development build to fetch the current
 monthly offering, make a simulated purchase, restore it or refresh status. The
 RevenueCat SDK identifies customers with their signed-in Supabase UUID. Web is a
 preview and does not accept payments. The public `test_` SDK key is intentional.

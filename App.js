@@ -12,7 +12,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { readDailySteps } from './native/healthSteps';
 import Purchases from 'react-native-purchases';
 import { createTestBilling } from './native/revenueCat';
-const testBilling = createTestBilling(Purchases);
+const testBilling = createTestBilling(Purchases, { allowTestStore: __DEV__ });
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

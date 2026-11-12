@@ -1,8 +1,10 @@
 // Public SDK key, Test Store only. Never use this configuration in a store release.
 export const TEST_API_KEY = 'test_IZdJBShihmchVXdudDqmfZEfkdh';
-export function createTestBilling(Purchases) {
+export function createTestBilling(Purchases, { allowTestStore = false } = {}) {
   let configured = false, user = null, queue = Promise.resolve();
   async function run(message) {
+    // Never configure the Test Store in a release APK: the native SDK terminates it.
+    if (!allowTestStore) throw new Error('Payment testing is disabled in this release APK. You can continue using the app.');
     const { userId, action } = message;
     if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(userId || '')) throw new Error('Sign in before using subscriptions.');
     if (!['status', 'purchase', 'restore'].includes(action)) throw new Error('Unknown subscription action.');
