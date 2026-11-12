@@ -930,6 +930,90 @@ function recipeEditor(rec,done){
   };
 }
 
+/* CUSTOM_TRAINING_START */
+/* DropASize training shared: one exact timeline for coach and member. */
+(function(root){
+  function seconds(items){return (items||[]).reduce(function(total,item){return total+Number(item.s||0)},0)}
+  function validate(plan){
+    if(!plan||!String(plan.name||'').trim())throw new Error('Give the custom plan a name.');
+    if(!Number.isInteger(plan.targetSeconds)||plan.targetSeconds<60||plan.targetSeconds>10800)throw new Error('Set a session length between 1 and 180 minutes.');
+    if(!Array.isArray(plan.items)||!plan.items.some(function(item){return !item.isRest}))throw new Error('Add at least one exercise.');
+    if(plan.items.length>100)throw new Error('A session can contain up to 100 exercises and rests.');
+    plan.items.forEach(function(item){if(!item.n||!Number.isInteger(item.s)||item.s<1||item.s>3600)throw new Error('Every exercise or rest needs a valid name and duration in seconds.');if(item.custom&&(!item.images||!item.images.before||!item.images.after))throw new Error('Generate both images for custom exercises before assigning the plan.')});
+    if(seconds(plan.items)>plan.targetSeconds)throw new Error('This session is over its time limit. Shorten a slot or increase the session length.');
+    if(!Array.isArray(plan.days)||!plan.days.length||plan.days.length>7||new Set(plan.days).size!==plan.days.length||plan.days.some(function(day){return !Number.isInteger(day)||day<0||day>6}))throw new Error('Choose at least one training day.');
+    if(!Number.isInteger(plan.weeks)||plan.weeks<1||plan.weeks>52)throw new Error('Choose a plan length between 1 and 52 weeks.');
+    return plan;
+  }
+  function workout(plan){validate(plan);return {id:plan.id,n:plan.name,mins:Math.round(seconds(plan.items)/6)/10,level:'Custom',style:'sets',warm:[],cool:[],rounds:1,rest:0,rr:0,ex:plan.items.map(function(item){return Object.assign({},item,{sets:1,rest:0})}),why:plan.notes||'Your coach’s custom training session.'}}
+  function assignment(plan,start){validate(plan);var days=plan.days.slice().sort();return {a:{daysN:days.length,days:days,coachCustomDays:days,mins:plan.targetSeconds/60,place:plan.place||'home',level:1,kit:['none'],care:[],meno:false},start:start,blockWeeks:plan.weeks,stepsGoal:plan.stepsGoal||10000,swaps:{},made:new Date().toISOString(),coachSet:true,template:plan.name,customWorkout:JSON.parse(JSON.stringify(workout(plan)))}}
+  root.NtTraining={seconds:seconds,validate:validate,workout:workout,assignment:assignment,format:function(value){var v=Math.abs(Math.round(value));return Math.floor(v/60)+'m '+v%60+'s'}};
+})(typeof window!=='undefined'?window:globalThis);
+
+async function trainingCatalog(){
+  var results=await Promise.all([fetch('../training-catalog.json').then(function(r){if(!r.ok)throw new Error('The exercise library could not be loaded. Refresh the admin page.');return r.json()}),db.doc('config','custom-exercises')]);
+  return {exercises:results[0].exercises.concat((results[1]&&results[1].list)||[]),rests:results[0].rests};
+}
+function customExerciseDialog(onSaved,existing){
+  var item=existing?JSON.parse(JSON.stringify(existing)):{id:'custom-ex-'+crypto.randomUUID(),custom:true,n:'',cue:'',r:'10',s:60,images:null};
+  var modal=document.createElement('div');modal.className='modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Custom exercise');
+  modal.innerHTML='<div class="sheet" style="max-width:620px"><h2>Custom exercise</h2><label class="f" for="ce-name">Exercise name</label><input class="i" id="ce-name" maxlength="120" value="'+esc(item.n)+'"><label class="f" for="ce-details">Instructions and movement details</label><textarea class="i" id="ce-details" rows="4" maxlength="3000">'+esc(item.cue)+'</textarea><div class="fields"><div><label class="f" for="ce-reps">Reps</label><input class="i" id="ce-reps" maxlength="40" value="'+esc(item.r)+'"></div><div><label class="f" for="ce-seconds">Exercise time (seconds)</label><input class="i" type="number" id="ce-seconds" min="1" max="3600" value="'+item.s+'"></div></div><label class="f" for="ce-prompt">Image guidance / redo prompt (optional)</label><textarea class="i" id="ce-prompt" rows="3" maxlength="2000" placeholder="Describe the starting and ending pose, camera angle or equipment."></textarea><button class="btn ghost" id="ce-generate" style="margin-top:12px">'+(item.images?'Redo before & after images':'Generate before & after images')+'</button><div id="ce-images" class="grid two" style="margin-top:14px"></div><div id="ce-message" role="status" aria-live="polite"></div><div class="row end" style="gap:10px;margin-top:16px"><button class="btn ghost" id="ce-cancel">Cancel</button><button class="btn" id="ce-save">Save custom exercise</button></div></div>';
+  document.body.appendChild(modal);var busy=false;
+  function message(text,error){var el=$('#ce-message',modal);el.className=error?'err':'small mut';el.textContent=text}
+  function collect(){item.n=$('#ce-name',modal).value.trim();item.cue=$('#ce-details',modal).value.trim();item.r=$('#ce-reps',modal).value.trim();item.s=Number($('#ce-seconds',modal).value);if(!item.n||!item.cue)throw new Error('Add the exercise name and movement details.');if(!Number.isInteger(item.s)||item.s<1||item.s>3600)throw new Error('Exercise time must be 1–3,600 seconds.');return item}
+  function images(){var box=$('#ce-images',modal);box.innerHTML=item.images?['before','after'].map(function(p){return '<div><b>'+p[0].toUpperCase()+p.slice(1)+'</b><img src="'+esc(item.images[p])+'" alt="'+esc(item.n+' '+p)+'" style="width:100%;border-radius:14px;display:block"></div>'}).join(''):''}
+  function lock(on){busy=on;$$('input,textarea,button',modal).forEach(function(el){el.disabled=on})}
+  $('#ce-cancel',modal).onclick=function(){if(!busy)modal.remove()};
+  $('#ce-generate',modal).onclick=async function(){
+    if(busy)return;try{collect()}catch(e){message(e.message,true);return}lock(true);message('Generating both images. This can take up to two minutes.');
+    try{
+      var response=await fetch(SB_URL+'/functions/v1/coach-training-images-test',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+await token()},body:JSON.stringify({name:item.n,details:item.cue,reps:item.r,seconds:item.s,prompt:$('#ce-prompt',modal).value.trim()}),signal:AbortSignal.timeout(130000)});
+      var data={};try{data=await response.json()}catch(e){}
+      if(!response.ok)throw new Error(response.status===404?'The image tool has not been activated yet.':typeof data.error==='string'?data.error:'Image generation failed. Please try again.');
+      if(!data.images||!data.images.before||!data.images.after)throw new Error('The image service did not return both images. Your previous images have been kept.');
+      item.images=data.images;images();$('#ce-generate',modal).textContent='Redo before & after images';message('Both images are ready. Check the poses, then save the exercise.');
+    }catch(e){message(e.name==='TimeoutError'?'Image generation took too long. Your details and previous images are kept; try again.':e.message,true)}finally{lock(false)}
+  };
+  $('#ce-save',modal).onclick=async function(){if(busy)return;try{collect();if(!item.images||!item.images.before||!item.images.after)throw new Error('Generate both before and after images before saving this exercise.');lock(true);var doc=await db.doc('config','custom-exercises')||{},list=(doc.list||[]).filter(function(ex){return ex.id!==item.id});list.push(item);await db.docSet('config','custom-exercises',{list:list,updatedAt:new Date().toISOString()});modal.remove();onSaved(item)}catch(e){message(e.message,true);lock(false)}};
+  images();$('#ce-name',modal).focus();
+}
+async function customPlanEditor(plans,index,done){
+  var current=index>=0?plans[index]:null,plan=current?JSON.parse(JSON.stringify(current)):{id:'custom-plan-'+crypto.randomUUID(),custom:true,name:'',weeks:6,targetSeconds:1800,days:[0,2,4],place:'home',level:1,stepsGoal:10000,notes:'',items:[]};
+  var catalog;try{catalog=await trainingCatalog()}catch(e){toast(e.message);return}
+  var modal=document.createElement('div');modal.className='modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Custom training plan');
+  modal.innerHTML='<div class="sheet" style="max-width:760px"><h2>Custom training plan</h2><label class="f" for="ct-name">Plan name</label><input class="i" id="ct-name" value="'+esc(plan.name)+'"><div class="fields"><div><label class="f" for="ct-minutes">Session length (minutes)</label><input class="i" type="number" id="ct-minutes" min="1" max="180" step="1" value="'+plan.targetSeconds/60+'"></div><div><label class="f" for="ct-weeks">Plan length (weeks)</label><input class="i" type="number" id="ct-weeks" min="1" max="52" value="'+plan.weeks+'"></div><div><label class="f" for="ct-start">Starts</label><input class="i" type="date" id="ct-start" value="'+mondayISO()+'"></div></div><label class="f">Training days</label><div class="row" style="gap:10px;flex-wrap:wrap">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function(day,i){return '<label><input type="checkbox" data-ct-day="'+i+'"'+(plan.days.includes(i)?' checked':'')+'> '+day+'</label>'}).join('')+'</div><p class="small mut">This session repeats on the selected training days.</p><label class="f" for="ct-notes">Instructions for the member</label><textarea class="i" id="ct-notes" rows="2">'+esc(plan.notes||'')+'</textarea><h3>Build the session</h3><div id="ct-time" role="status" aria-live="polite" style="padding:12px;border-radius:14px;background:var(--leaf-light);font-weight:700"></div><div id="ct-items" style="margin:12px 0"></div><label class="f" for="ct-search">Find an exercise</label><input class="i" id="ct-search" placeholder="Search the exercise library"><select class="i" id="ct-exercise" aria-label="Exercise library" style="margin-top:8px"></select><div class="fields"><div><label class="f" for="ct-seconds">Time (seconds)</label><input class="i" type="number" id="ct-seconds" min="1" max="3600" value="60"></div><div><label class="f" for="ct-reps">Reps</label><input class="i" id="ct-reps" maxlength="40" placeholder="e.g. 10 or 8 each side"></div></div><div class="row" style="gap:10px;flex-wrap:wrap;margin:12px 0"><button class="btn ghost" id="ct-add">Add exercise</button><button class="btn ghost" id="ct-new">Create custom exercise</button><button class="btn ghost" id="ct-edit-ex">Edit selected custom exercise</button></div><div class="row" style="gap:10px"><select class="i" id="ct-rest" aria-label="Rest duration">'+catalog.rests.map(function(rest){return '<option value="'+rest.s+'">Rest · '+rest.s+' seconds</option>'}).join('')+'</select><button class="btn ghost" id="ct-add-rest">Add rest</button></div><h3>Assign to members</h3><input class="i" id="ct-members-search" placeholder="Search members by name or email" aria-label="Search members by name or email"><div id="ct-members" style="max-height:220px;overflow:auto;margin-top:8px"></div><p class="small mut" id="ct-selected"></p><div id="ct-message" role="status" aria-live="polite"></div><div class="row end" style="gap:10px;flex-wrap:wrap;margin-top:16px"><button class="btn ghost" id="ct-cancel">Cancel</button><button class="btn ghost" id="ct-save">Save plan</button><button class="btn" id="ct-assign">Assign custom plan</button></div></div>';
+  document.body.appendChild(modal);var selected=new Set(),users=[],busy=false;
+  function message(text,error){var box=$('#ct-message',modal);box.className=error?'err':'ok';box.textContent=text}
+  function lock(on){busy=on;$$('button,input,select,textarea',modal).forEach(function(el){el.disabled=on})}
+  function fields(){plan.name=$('#ct-name',modal).value.trim();plan.targetSeconds=Math.round(Number($('#ct-minutes',modal).value)*60);plan.weeks=Number($('#ct-weeks',modal).value);plan.days=$$('[data-ct-day]',modal).filter(function(el){return el.checked}).map(function(el){return Number(el.dataset.ctDay)});plan.daysN=plan.days.length;plan.mins=plan.targetSeconds/60;plan.notes=$('#ct-notes',modal).value.trim();return plan}
+  function rows(){
+    fields();var used=window.NtTraining.seconds(plan.items),left=plan.targetSeconds-used;$('#ct-time',modal).textContent=window.NtTraining.format(used)+' used · '+window.NtTraining.format(left)+(left<0?' over the session limit':' remaining');$('#ct-time',modal).style.color=left<0?'var(--red)':'var(--berry)';
+    $('#ct-items',modal).innerHTML=plan.items.length?plan.items.map(function(item,i){return '<div class="pitem" style="gap:8px;flex-wrap:wrap"><div class="grow"><b>'+esc(item.n)+'</b><div class="small mut">'+esc(item.r?item.r+' reps · ':'')+window.NtTraining.format(item.s)+'</div></div><input class="i" type="number" min="1" max="3600" aria-label="Seconds for '+esc(item.n)+'" data-ct-time="'+i+'" value="'+item.s+'" style="width:90px"><button class="btn ghost sm" data-ct-up="'+i+'"'+(i===0?' disabled':'')+' aria-label="Move '+esc(item.n)+' up">↑</button><button class="btn ghost sm" data-ct-remove="'+i+'">Remove</button></div>'}).join(''):'<p class="small mut">Add exercises and rest periods in the order the member should complete them.</p>';
+    $$('[data-ct-time]',modal).forEach(function(el){el.onchange=function(){plan.items[+el.dataset.ctTime].s=Number(el.value);rows()}});
+    $$('[data-ct-remove]',modal).forEach(function(el){el.onclick=function(){plan.items.splice(+el.dataset.ctRemove,1);rows()}});
+    $$('[data-ct-up]',modal).forEach(function(el){el.onclick=function(){var i=+el.dataset.ctUp;if(i>0){var swap=plan.items[i-1];plan.items[i-1]=plan.items[i];plan.items[i]=swap;rows()}}});
+  }
+  function options(){var query=$('#ct-search',modal).value.trim().toLowerCase();$('#ct-exercise',modal).innerHTML=catalog.exercises.filter(function(item){return item.n.toLowerCase().includes(query)}).map(function(item){return '<option value="'+esc(item.id)+'">'+esc(item.n)+(item.custom?' · Custom':'')+'</option>'}).join('');defaults()}
+  function currentExercise(){var id=$('#ct-exercise',modal).value;return catalog.exercises.find(function(item){return item.id===id})}
+  function defaults(){var item=currentExercise();if(item){$('#ct-seconds',modal).value=item.s||60;$('#ct-reps',modal).value=item.r||''}$('#ct-edit-ex',modal).hidden=!(item&&item.custom)}
+  function customSaved(item){catalog.exercises=catalog.exercises.filter(function(ex){return ex.id!==item.id});catalog.exercises.push(item);plan.items=plan.items.map(function(ex){return ex.id===item.id?Object.assign({},item,{s:ex.s,r:ex.r}):ex});rows();$('#ct-search',modal).value='';options();$('#ct-exercise',modal).value=item.id;defaults();message('Custom exercise saved. Click Add exercise to put it in this session.')}
+  function memberRows(){var query=$('#ct-members-search',modal).value.trim().toLowerCase(),matches=users.filter(function(user){return ((user.profile&&user.profile.name||'')+' '+user.email).toLowerCase().includes(query)});$('#ct-members',modal).innerHTML=matches.slice(0,50).map(function(user){return '<label class="row" style="gap:8px;padding:8px 0"><input type="checkbox" data-ct-member="'+user.id+'"'+(selected.has(user.id)?' checked':'')+'><span><b>'+esc(user.profile&&user.profile.name||user.email)+'</b><span class="small mut" style="display:block">'+esc(user.email)+'</span></span></label>'}).join('')||'<p class="small mut">No members found.</p>';$('#ct-selected',modal).textContent=selected.size+' selected'+(matches.length>50?' · Narrow your search to see more results.':'');$$('[data-ct-member]',modal).forEach(function(el){el.onchange=function(){if(el.checked)selected.add(el.dataset.ctMember);else selected.delete(el.dataset.ctMember);$('#ct-selected',modal).textContent=selected.size+' selected'}})}
+  async function persist(){fields();window.NtTraining.validate(plan);var fresh=await getPlans(),list=fresh.filter(function(p){return p.id!==plan.id});list.push(JSON.parse(JSON.stringify(plan)));await db.docSet('config','plans',{list:list,updatedAt:new Date().toISOString()});plans.length=0;list.forEach(function(p){plans.push(p)});done()}
+  $('#ct-search',modal).oninput=options;$('#ct-exercise',modal).onchange=defaults;$('#ct-minutes',modal).oninput=rows;
+  $('#ct-add',modal).onclick=function(){var item=currentExercise(),seconds=Number($('#ct-seconds',modal).value);if(!item){message('Choose an exercise from the library.',true);return}if(!Number.isInteger(seconds)||seconds<1||seconds>3600){message('Choose a duration between 1 and 3,600 seconds.',true);return}plan.items.push(Object.assign({},item,{s:seconds,r:$('#ct-reps',modal).value.trim()}));rows()};
+  $('#ct-add-rest',modal).onclick=function(){var rest=catalog.rests.find(function(item){return item.s===Number($('#ct-rest',modal).value)});if(rest){plan.items.push(Object.assign({},rest));rows()}};
+  $('#ct-new',modal).onclick=function(){customExerciseDialog(customSaved)};$('#ct-edit-ex',modal).onclick=function(){var item=currentExercise();if(item&&item.custom)customExerciseDialog(customSaved,item)};
+  $('#ct-cancel',modal).onclick=function(){if(!busy)modal.remove()};$('#ct-members-search',modal).oninput=memberRows;
+  $('#ct-save',modal).onclick=async function(){if(busy)return;lock(true);try{await persist();message('Custom plan saved. Choose members and click Assign when ready.')}catch(e){message(e.message,true)}finally{lock(false)}};
+  $('#ct-assign',modal).onclick=async function(){
+    if(busy)return;if(!selected.size){message('Choose at least one member by name or email.',true);return}
+    var start=$('#ct-start',modal).value;if(!/^\d{4}-\d{2}-\d{2}$/.test(start)){message('Choose the plan start date.',true);return}lock(true);
+    try{await persist();var success=[],failed=[];for(var id of Array.from(selected)){var user=users.find(function(u){return u.id===id});if(!user)continue;var at=new Date().toISOString(),assigned=window.NtTraining.assignment(plan,start);assigned.coachAppliedAt=at;try{await db.userSet(id,'coach-plan',{plan:assigned,assignedAt:at,by:session.user.email});success.push(user.email);selected.delete(id)}catch(e){failed.push(user.email+': '+e.message)}}message((success.length?'Assigned to '+success.join(', ')+'. Members will see a notification when they open the app or it next syncs. ':'')+(failed.length?'Not assigned: '+failed.join('; '):''),!!failed.length);memberRows()}catch(e){message(e.message,true)}finally{lock(false)}
+  };
+  rows();options();$('#ct-members',modal).textContent='Loading members…';try{users=(await rest('POST','rpc/admin_users',{})).filter(function(user){return user.role!=='coach'});memberRows()}catch(e){$('#ct-members',modal).textContent='Could not load members: '+e.message}
+}
+
+/* CUSTOM_TRAINING_END */
 /* ---------- Training plan templates ---------- */
 var PLAN_DEFAULTS=[
   {id:'starter-6',name:'Starter · 6 weeks',weeks:6,daysN:3,mins:30,place:'home',level:1,stepsGoal:8000,notes:'For beginners. Three short sessions a week at home.'},
@@ -942,13 +1026,14 @@ async function getPlans(){var d=await db.doc('config','plans');return d&&Array.i
 function planLine(p){return p.weeks+' weeks · '+p.daysN+' days a week · '+p.mins+' min · '+PLACE[p.place]+' · '+LEVEL[p.level]}
 function mondayISO(){var d=new Date(),k=d.getDay();d.setDate(d.getDate()-(k===0?6:k-1));return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 async function plansView(){
-  shell('<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Training</span><h2 style="margin:8px 0 0">Plan templates</h2><p class="mut small" style="margin:6px 0 0">Make plans here, then assign one to a member from their Training tab.</p></div><button class="btn sm" id="pn">New plan</button></div><div id="pl" class="plist"><div class="empty">Loading…</div></div></div>');
+  shell('<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-end"><div><span class="eyebrow">Training</span><h2 style="margin:8px 0 0">Plan templates</h2><p class="mut small" style="margin:6px 0 0">Make plans here, then assign one to a member from their Training tab.</p></div><div class="row" style="gap:10px;flex-wrap:wrap"><button class="btn ghost sm" id="pcustom">Custom training</button><button class="btn sm" id="pn">New plan</button></div></div><div id="pl" class="plist"><div class="empty">Loading…</div></div></div>');
   var plans;try{plans=await getPlans()}catch(e){$('#pl').innerHTML='<div class="err">'+esc(e.message)+'</div>';return}
   function draw(){
     $('#pl').innerHTML=plans.map(function(p,i){return '<div class="pitem"><div class="grow"><b>'+esc(p.name)+'</b><div class="small mut">'+esc(planLine(p))+(p.stepsGoal?' · '+Number(p.stepsGoal).toLocaleString('en-GB')+' steps':'')+'</div>'+(p.notes?'<div class="small" style="margin-top:4px">'+esc(p.notes)+'</div>':'')+'</div><button class="btn ghost sm" data-pe="'+i+'">Edit</button></div>'}).join('');
-    $$('[data-pe]').forEach(function(b){b.onclick=function(){planEditor(plans,+b.dataset.pe,draw)}});
+    $$('[data-pe]').forEach(function(b){b.onclick=function(){(plans[+b.dataset.pe].custom?customPlanEditor:planEditor)(plans,+b.dataset.pe,draw)}});
   }
   $('#pn').onclick=function(){planEditor(plans,-1,draw)};
+  $('#pcustom').onclick=function(){customPlanEditor(plans,-1,draw)};
   draw();
 }
 function planEditor(plans,idx,done){
@@ -994,6 +1079,7 @@ async function assignPlanUI(M,el){
     var a=obj(tp.a);
     var plan={a:{daysN:p.daysN,days:DAYS_FOR[p.daysN]||DAYS_FOR[3],mins:p.mins,place:p.place,level:p.level,kit:arr(a.kit).length?a.kit:(p.place==='gym'?['gym']:['none']),care:arr(a.care),meno:!!a.meno},
       start:$('#as').value||mondayISO(),blockWeeks:p.weeks,stepsGoal:p.stepsGoal,swaps:tp.swaps||{},made:new Date().toISOString(),coachSet:true,template:p.name};
+    if(p.custom)plan=window.NtTraining.assignment(p,$('#as').value||mondayISO());
     this.disabled=true;
     var at=new Date().toISOString();plan.coachAppliedAt=at;
     try{await db.userSet(M.uid,'coach-plan',{plan:plan,assignedAt:at,by:session.user.email});await db.userSet(M.uid,'training-plan',plan);M.data['training-plan']=plan;M.data['coach-plan']={plan:plan,assignedAt:at};toast('Plan assigned. It shows in their app within a few minutes, or straight away when they next open it.');drawTab(M,'training')}catch(e){toast(e.message);this.disabled=false}

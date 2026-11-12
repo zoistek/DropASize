@@ -393,9 +393,21 @@
     lsSet('nt:training-plan',JSON.stringify(next));
     return true;
   }
+  var trainingNoticeOpen=false;
+  async function coachPlanNotice(){
+    if(trainingNoticeOpen||!session||!window.ntAlert)return false;
+    var cp,seen;try{cp=JSON.parse(lsGet('nt:coach-plan')||'null');seen=JSON.parse(lsGet('nt:coach-plan-seen')||'null')}catch(e){return false}
+    if(!cp||!cp.plan||!cp.assignedAt||seen&&seen.assignedAt>=cp.assignedAt)return false;
+    trainingNoticeOpen=true;
+    try{
+      var ok=await window.ntAlert('Your coach changed your training plan. Open Train to see your updated plan.');
+      if(ok===true){lsSet('nt:coach-plan-seen',JSON.stringify({assignedAt:cp.assignedAt}));window.dispatchEvent(new Event('nt-training-plan'))}
+      return true;
+    }finally{trainingNoticeOpen=false}
+  }
   var lastRefresh=0;
   async function refreshFromCloud(){
-    if(!session||Date.now()-lastRefresh<45000)return;lastRefresh=Date.now();
+    if(!session||Date.now()-lastRefresh<15000)return;lastRefresh=Date.now();
     try{
       var since=lsGet('ntlastpull')||'1970-01-01T00:00:00Z';
       var rows=await rest('GET','user_data?user_id=eq.'+session.user.id+'&select=key,value,updated_at&updated_at=gt.'+encodeURIComponent(since));
@@ -408,11 +420,12 @@
       });
       rawSet.call(localStorage,'ntlastpull',newest);
       if(applyCoachPlan())changed=true;
-      if(changed)window.ntToast('Your coach updated your plan',{label:'Refresh',run:function(){reloadApp()}});
+      var notified=await coachPlanNotice();
+      if(changed&&!notified)window.ntToast('Your coach updated your plan',{label:'Refresh',run:function(){reloadApp()}});
     }catch(e){}
   }
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&document.getElementById('nt-app')&&document.getElementById('nt-app').dataset.ran)refreshFromCloud()});
-  setInterval(function(){if(document.visibilityState==='visible')refreshFromCloud()},180000);
+  setInterval(function(){if(document.visibilityState==='visible')refreshFromCloud()},30000);
 
   /* Display name: shown in the app and the coach panel. */
   window.ntSetDisplayName=async function(name){
@@ -619,6 +632,7 @@
     await Promise.all([loadRole(),loadLibrary(),loadCoachMeals(),loadAvatar()]);
     startApp();
     window.dispatchEvent(new Event('nt-auth-ready'));
+    setTimeout(function(){coachPlanNotice().catch(function(){})},600);
     setTimeout(hcBoot,600);
     setTimeout(showCoachNotes,1500);
     setTimeout(publishScore,4000);

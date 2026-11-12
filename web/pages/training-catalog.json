@@ -1,0 +1,1287 @@
+{
+  "exercises": [
+    {
+      "id": "abductor-machine",
+      "n": "Abductor machine",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "adductor-machine",
+      "n": "Adductor machine",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "arm-circles",
+      "n": "Arm circles",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "arm-swings",
+      "n": "Arm swings",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "arnold-press",
+      "n": "Arnold press",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "assisted-pull-up",
+      "n": "Assisted pull-up",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "band-chest-press",
+      "n": "Band chest press",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "band-glute-kickback",
+      "n": "Band glute kickback",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "band-good-morning",
+      "n": "Band good morning",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "band-overhead-press",
+      "n": "Band overhead press",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "band-pull-apart",
+      "n": "Band pull-apart",
+      "cue": "",
+      "r": "15",
+      "s": 70
+    },
+    {
+      "id": "band-pull-aparts",
+      "n": "Band pull-aparts",
+      "cue": "",
+      "r": "15",
+      "s": 70
+    },
+    {
+      "id": "band-row",
+      "n": "Band row",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "band-squat",
+      "n": "Band squat",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "banded-glute-bridge",
+      "n": "Banded glute bridge",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "banded-glute-kickback",
+      "n": "Banded glute kickback",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "barbell-back-squat",
+      "n": "Barbell back squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "barbell-deadlift",
+      "n": "Barbell deadlift",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "barbell-romanian-deadlift",
+      "n": "Barbell Romanian deadlift",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "bench-press",
+      "n": "Bench press",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "bent-over-dumbbell-row",
+      "n": "Bent-over dumbbell row",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "bicep-curl",
+      "n": "Bicep curl",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "bike-or-cross-trainer",
+      "n": "Bike or cross-trainer",
+      "cue": "",
+      "r": "",
+      "s": 300
+    },
+    {
+      "id": "bird-dog",
+      "n": "Bird dog",
+      "cue": "Opposite arm and leg, keep hips level.",
+      "r": "8",
+      "s": 42
+    },
+    {
+      "id": "bodyweight-squat",
+      "n": "Bodyweight squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "bodyweight-squats",
+      "n": "Bodyweight squats",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "box-squat-to-chair",
+      "n": "Box squat to chair",
+      "cue": "Only go as low as feels comfortable.",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "bridge-with-slow-roll-down",
+      "n": "Bridge with slow roll-down",
+      "cue": "",
+      "r": "8",
+      "s": 42
+    },
+    {
+      "id": "brisk-walk-you-can-talk-not-sing-",
+      "n": "Brisk walk (you can talk, not sing)",
+      "cue": "",
+      "r": "",
+      "s": 120
+    },
+    {
+      "id": "bulgarian-split-squat",
+      "n": "Bulgarian split squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "burpee",
+      "n": "Burpee",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "burpees-step-back-option-",
+      "n": "Burpees (step-back option)",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "cable-crunch",
+      "n": "Cable crunch",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "cable-kickback",
+      "n": "Cable kickback",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "cable-pull-through",
+      "n": "Cable pull-through",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "calf-raises",
+      "n": "Calf raises",
+      "cue": "",
+      "r": "15",
+      "s": 70
+    },
+    {
+      "id": "calf-stretch",
+      "n": "Calf stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "cat-cow",
+      "n": "Cat–cow",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "chair-squat",
+      "n": "Chair squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "chair-squats",
+      "n": "Chair squats",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "chest-fly",
+      "n": "Chest fly",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "chest-opener-stretch",
+      "n": "Chest opener stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "chest-press",
+      "n": "Chest press",
+      "cue": "",
+      "r": "8",
+      "s": 42
+    },
+    {
+      "id": "chest-press-machine",
+      "n": "Chest press machine",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "child-s-pose",
+      "n": "Child's pose",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "child-s-pose-with-slow-breathing",
+      "n": "Child's pose with slow breathing",
+      "cue": "",
+      "r": "",
+      "s": 60
+    },
+    {
+      "id": "clamshells",
+      "n": "Clamshells",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "cross-body-shoulder-stretch",
+      "n": "Cross-body shoulder stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "cross-trainer-or-brisk-walk",
+      "n": "Cross-trainer or brisk walk",
+      "cue": "",
+      "r": "",
+      "s": 300
+    },
+    {
+      "id": "crunch",
+      "n": "Crunch",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "cycling",
+      "n": "Cycling",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "dance-or-zumba-class",
+      "n": "Dance or Zumba class",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "dead-bug",
+      "n": "Dead bug",
+      "cue": "Lower back stays on the floor.",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "doorway-chest-stretch",
+      "n": "Doorway chest stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "dumbbell-bench-press",
+      "n": "Dumbbell bench press",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "dumbbell-chest-press",
+      "n": "Dumbbell chest press",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "dumbbell-floor-press",
+      "n": "Dumbbell floor press",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "dumbbell-glute-bridge",
+      "n": "Dumbbell glute bridge",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "dumbbell-reverse-lunge",
+      "n": "Dumbbell reverse lunge",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "dumbbell-romanian-deadlift",
+      "n": "Dumbbell Romanian deadlift",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "dumbbell-shoulder-press",
+      "n": "Dumbbell shoulder press",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "dumbbell-step-up",
+      "n": "Dumbbell step-up",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "dumbbell-sumo-squat",
+      "n": "Dumbbell sumo squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "easy-walk",
+      "n": "Easy walk",
+      "cue": "",
+      "r": "",
+      "s": 300
+    },
+    {
+      "id": "easy-walk-to-cool-down",
+      "n": "Easy walk to cool down",
+      "cue": "",
+      "r": "",
+      "s": 300
+    },
+    {
+      "id": "face-pull",
+      "n": "Face pull",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "farmer-s-carry",
+      "n": "Farmer's carry",
+      "cue": "Heavy dumbbells, tall posture, walk slowly.",
+      "r": "",
+      "s": 40
+    },
+    {
+      "id": "figure-4-stretch",
+      "n": "Figure-4 stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "glute-bridge",
+      "n": "Glute bridge",
+      "cue": "Squeeze your bum at the top for 1 second.",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "glute-bridge-march",
+      "n": "Glute bridge march",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "goblet-or-barbell-squat",
+      "n": "Goblet or barbell squat",
+      "cue": "Heavier than usual, slow on the way down.",
+      "r": "8",
+      "s": 42
+    },
+    {
+      "id": "goblet-squat",
+      "n": "Goblet squat",
+      "cue": "Hold one dumbbell at your chest, sit back and down.",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "halo",
+      "n": "Halo",
+      "cue": "",
+      "r": "8",
+      "s": 42
+    },
+    {
+      "id": "hammer-curl",
+      "n": "Hammer curl",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "hamstring-curl",
+      "n": "Hamstring curl",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "hamstring-stretch",
+      "n": "Hamstring stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "heel-taps",
+      "n": "Heel taps",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "high-knees",
+      "n": "High knees",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "hip-circles",
+      "n": "Hip circles",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "hip-flexor-stretch",
+      "n": "Hip flexor stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "hip-hinge-to-wall",
+      "n": "Hip hinge to wall",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "hip-hinges",
+      "n": "Hip hinges",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "hip-thrust",
+      "n": "Hip thrust",
+      "cue": "Chin tucked, squeeze at the top.",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "inchworm",
+      "n": "Inchworm",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "incline-press-up-on-the-kitchen-counter",
+      "n": "Incline press-up on the kitchen counter",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "jog-on-the-spot",
+      "n": "Jog on the spot",
+      "cue": "",
+      "r": "",
+      "s": 60
+    },
+    {
+      "id": "jumping-jacks",
+      "n": "Jumping jacks",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "kettlebell-deadlift",
+      "n": "Kettlebell deadlift",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "kettlebell-goblet-squat",
+      "n": "Kettlebell goblet squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "kettlebell-overhead-press",
+      "n": "Kettlebell overhead press",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "kettlebell-row",
+      "n": "Kettlebell row",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "kettlebell-swing",
+      "n": "Kettlebell swing",
+      "cue": "Power comes from your hips, not your arms.",
+      "r": "15",
+      "s": 70
+    },
+    {
+      "id": "knee-press-up",
+      "n": "Knee press-up",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "knee-push-up",
+      "n": "Knee push-up",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "knee-to-opposite-elbow",
+      "n": "Knee to opposite elbow",
+      "cue": "",
+      "r": "",
+      "s": 40
+    },
+    {
+      "id": "knees-to-chest-hug",
+      "n": "Knees-to-chest hug",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "lat-pulldown",
+      "n": "Lat pulldown",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "lateral-lunge",
+      "n": "Lateral lunge",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "lateral-raise",
+      "n": "Lateral raise",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "leg-extension",
+      "n": "Leg extension",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "leg-press",
+      "n": "Leg press",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "leg-swings",
+      "n": "Leg swings",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "legs-up-the-wall",
+      "n": "Legs up the wall",
+      "cue": "",
+      "r": "",
+      "s": 120
+    },
+    {
+      "id": "lying-leg-curl",
+      "n": "Lying leg curl",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "lying-spinal-twist",
+      "n": "Lying spinal twist",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "machine-shoulder-press",
+      "n": "Machine shoulder press",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "march-and-arm-swings",
+      "n": "March and arm swings",
+      "cue": "",
+      "r": "",
+      "s": 60
+    },
+    {
+      "id": "march-on-the-spot",
+      "n": "March on the spot",
+      "cue": "",
+      "r": "",
+      "s": 60
+    },
+    {
+      "id": "march-on-the-spot-holding-weights",
+      "n": "March on the spot holding weights",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "mountain-climbers",
+      "n": "Mountain climbers",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "neck-rolls",
+      "n": "Neck rolls",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "overhead-press",
+      "n": "Overhead press",
+      "cue": "Ribs down, don't arch your back.",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "pallof-press",
+      "n": "Pallof press",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "pelvic-tilts",
+      "n": "Pelvic tilts",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "pigeon-stretch",
+      "n": "Pigeon stretch",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "pike-press-up",
+      "n": "Pike press-up",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "pilates-class",
+      "n": "Pilates class",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "plank",
+      "n": "Plank",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "plank-shoulder-taps",
+      "n": "Plank shoulder taps",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "press-up",
+      "n": "Press-up",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "prone-y-t-raise",
+      "n": "Prone Y-T raise",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "push-up",
+      "n": "Push-up",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "quad-stretch",
+      "n": "Quad stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "reverse-lunge",
+      "n": "Reverse lunge",
+      "cue": "",
+      "r": "8",
+      "s": 42
+    },
+    {
+      "id": "romanian-deadlift",
+      "n": "Romanian deadlift",
+      "cue": "Soft knees, push hips back, flat back.",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "rower",
+      "n": "Rower",
+      "cue": "",
+      "r": "",
+      "s": 300
+    },
+    {
+      "id": "rowing-machine",
+      "n": "Rowing machine",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "russian-twist",
+      "n": "Russian twist",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "seated-cable-row",
+      "n": "Seated cable row",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "shoulder-rolls",
+      "n": "Shoulder rolls",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "side-plank",
+      "n": "Side plank",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "side-plank-on-knees",
+      "n": "Side plank on knees",
+      "cue": "",
+      "r": "",
+      "s": 20
+    },
+    {
+      "id": "side-shuffles",
+      "n": "Side shuffles",
+      "cue": "",
+      "r": "",
+      "s": 40
+    },
+    {
+      "id": "side-lying-leg-circles",
+      "n": "Side-lying leg circles",
+      "cue": "",
+      "r": "8",
+      "s": 42
+    },
+    {
+      "id": "side-lying-leg-raise",
+      "n": "Side-lying leg raise",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "single-arm-dumbbell-row",
+      "n": "Single-arm dumbbell row",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "single-arm-row",
+      "n": "Single-arm row",
+      "cue": "Pull your elbow to your hip.",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "single-leg-glute-bridge",
+      "n": "Single-leg glute bridge",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "single-leg-romanian-deadlift-bodyweight-",
+      "n": "Single-leg Romanian deadlift (bodyweight)",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "single-leg-stretch",
+      "n": "Single-leg stretch",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "sit-to-stand-squat",
+      "n": "Sit-to-stand squat",
+      "cue": "Use a chair. Feet hip-width, stand up through your heels.",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "skipping",
+      "n": "Skipping",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "skull-crusher",
+      "n": "Skull crusher",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "slow-march-and-breathe",
+      "n": "Slow march and breathe",
+      "cue": "",
+      "r": "",
+      "s": 60
+    },
+    {
+      "id": "slow-march-with-deep-breaths",
+      "n": "Slow march with deep breaths",
+      "cue": "",
+      "r": "",
+      "s": 60
+    },
+    {
+      "id": "smith-machine-squat",
+      "n": "Smith machine squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "spine-twist-lying-down",
+      "n": "Spine twist lying down",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "split-squat",
+      "n": "Split squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "squat-jumps-or-fast-squats-",
+      "n": "Squat jumps (or fast squats)",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "squat-to-overhead-reach",
+      "n": "Squat to overhead reach",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "stair-climber",
+      "n": "Stair climber",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "standing-hip-flexor-stretch",
+      "n": "Standing hip flexor stretch",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "standing-knee-lifts",
+      "n": "Standing knee lifts",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "standing-punches",
+      "n": "Standing punches",
+      "cue": "",
+      "r": "",
+      "s": 40
+    },
+    {
+      "id": "standing-side-bend",
+      "n": "Standing side bend",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "step-touch",
+      "n": "Step touch",
+      "cue": "",
+      "r": "",
+      "s": 40
+    },
+    {
+      "id": "step-out-jacks",
+      "n": "Step-out jacks",
+      "cue": "",
+      "r": "",
+      "s": 40
+    },
+    {
+      "id": "step-up-onto-bottom-stair",
+      "n": "Step-up onto bottom stair",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "step-ups",
+      "n": "Step-ups",
+      "cue": "",
+      "r": "8",
+      "s": 42
+    },
+    {
+      "id": "suitcase-carry",
+      "n": "Suitcase carry",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "sumo-squat",
+      "n": "Sumo squat",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "superman-pull",
+      "n": "Superman pull",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "swimming",
+      "n": "Swimming",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "swimming-lying-face-down-",
+      "n": "Swimming (lying face down)",
+      "cue": "",
+      "r": "",
+      "s": 30
+    },
+    {
+      "id": "toe-taps",
+      "n": "Toe taps",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "trap-bar-deadlift",
+      "n": "Trap-bar deadlift",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "treadmill-incline-walk",
+      "n": "Treadmill incline walk",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "triceps-rope-pushdown",
+      "n": "Triceps rope pushdown",
+      "cue": "",
+      "r": "12",
+      "s": 58
+    },
+    {
+      "id": "walk-at-a-steady-pace",
+      "n": "Walk at a steady pace",
+      "cue": "",
+      "r": "",
+      "s": 900
+    },
+    {
+      "id": "walk-it-off",
+      "n": "Walk it off",
+      "cue": "",
+      "r": "",
+      "s": 60
+    },
+    {
+      "id": "walking-lunges",
+      "n": "Walking lunges",
+      "cue": "",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "wall-press-up",
+      "n": "Wall press-up",
+      "cue": "Hands on the wall, body in one line.",
+      "r": "10",
+      "s": 50
+    },
+    {
+      "id": "wall-slides",
+      "n": "Wall slides",
+      "cue": "",
+      "r": "",
+      "s": 50
+    },
+    {
+      "id": "world-s-greatest-stretch",
+      "n": "World's greatest stretch",
+      "cue": "",
+      "r": "",
+      "s": 45
+    },
+    {
+      "id": "yoga-class",
+      "n": "Yoga class",
+      "cue": "",
+      "r": "",
+      "s": 50
+    }
+  ],
+  "rests": [
+    {
+      "id": "rest-10",
+      "n": "Rest",
+      "s": 10,
+      "isRest": true,
+      "r": "",
+      "cue": "Rest and breathe."
+    },
+    {
+      "id": "rest-20",
+      "n": "Rest",
+      "s": 20,
+      "isRest": true,
+      "r": "",
+      "cue": "Rest and breathe."
+    },
+    {
+      "id": "rest-30",
+      "n": "Rest",
+      "s": 30,
+      "isRest": true,
+      "r": "",
+      "cue": "Rest and breathe."
+    },
+    {
+      "id": "rest-45",
+      "n": "Rest",
+      "s": 45,
+      "isRest": true,
+      "r": "",
+      "cue": "Rest and breathe."
+    },
+    {
+      "id": "rest-60",
+      "n": "Rest",
+      "s": 60,
+      "isRest": true,
+      "r": "",
+      "cue": "Rest and breathe."
+    },
+    {
+      "id": "rest-75",
+      "n": "Rest",
+      "s": 75,
+      "isRest": true,
+      "r": "",
+      "cue": "Rest and breathe."
+    },
+    {
+      "id": "rest-90",
+      "n": "Rest",
+      "s": 90,
+      "isRest": true,
+      "r": "",
+      "cue": "Rest and breathe."
+    }
+  ]
+}

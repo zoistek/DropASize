@@ -1,0 +1,9 @@
+/* DropASize custom coach workout: reuses the existing timer and log. */
+function NtCoachWorkout(props){
+  var h=React.createElement,state=React.useState,a=state(false),playing=a[0],setPlaying=a[1],b=state(''),message=b[0],setMessage=b[1],plan=props.plan,workout=plan.customWorkout,days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var card={background:'#fff',borderRadius:22,padding:18,marginBottom:14},button={width:'100%',border:0,borderRadius:999,padding:'15px 18px',background:'#5DBC01',color:'#0E351D',fontFamily:'inherit',fontWeight:700,fontSize:15};
+  var ready=!plan.start||ntDay()>=plan.start;
+  return h('div',null,h('section',{style:Object.assign({},card,{background:'#0E351D',color:'#fff'})},h('div',{style:{fontSize:12,fontWeight:700,color:'#5DBC01'}},'Your coach’s custom plan'),h('h2',{style:{margin:'6px 0'}},plan.template||workout.n),h('p',null,workout.mins,' minutes · ',plan.blockWeeks,' weeks'),h('p',null,(plan.a.days||[]).map(function(day){return days[day]}).join(' · ')),plan.start&&h('div',{style:{fontSize:12}},'Starts ',plan.start)),
+    h('section',{style:card},h('h3',{style:{marginTop:0}},'Your session'),workout.why&&h('p',{style:{fontSize:14,lineHeight:1.5}},workout.why),workout.ex.map(function(item,index){return h('div',{key:index,style:{borderTop:'1px solid #E7EAE6',padding:'12px 0'}},h('strong',null,index+1,'. ',item.n),h('span',{style:{float:'right',fontSize:13}},window.NtTraining.format(item.s)),item.r&&h('div',{style:{fontSize:13}},item.r,' reps'),item.cue&&h('p',{style:{fontSize:13,lineHeight:1.5}},item.cue),!item.isRest&&props.renderExercise(item))}),h('button',{type:'button',style:button,disabled:!ready,onClick:function(){setMessage('');setPlaying(true)}},ready?'Start workout':'Available from '+plan.start),message&&h('p',{role:'status'},message)),
+    playing&&props.renderPlayer(function(){setPlaying(false)},function(){setPlaying(false);setMessage('Workout saved. Well done!')}));
+}
