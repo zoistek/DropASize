@@ -13,6 +13,8 @@ function inject(markers, file) {
   html = html.slice(0, start) + code + html.slice(end);
 }
 if(!html.includes('/* DropASize dialogs:'))html=html.replace('<title>DropASize</title>','<title>DropASize</title>\n<script>\n/* DropASize dialogs: */\n</script>');
+if(!html.includes('/* DropASize email signup:'))html=html.replace('<title>DropASize</title>','<title>DropASize</title>\n<script>\n/* DropASize email signup: */\n</script>');
+inject(['/* DropASize email signup:'], 'signup.js');
 inject(['/* DropASize dialogs:'], 'dialogs.js');
 inject(['/* DropASize icons:'], 'icons.js');
 inject(['/* DropASize app layer', '/* Nourish&Thrive app layer'], 'gate.js');

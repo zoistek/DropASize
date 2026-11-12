@@ -633,17 +633,18 @@
 
   var QUIZ_PENDING='ntonboardingpending';
   var QUIZ_KEYS=['account','profile','daily-target','training-prefs','training-plan','user-locale'];
-  function stageGoogleQuiz(){
+  function stageGoogleQuiz(email){
     var data={};QUIZ_KEYS.forEach(function(k){var raw=lsGet('nt:'+k);if(raw!==null)data[k]=JSON.parse(raw)});
-    if(!data.profile||!data.profile.consent||!data['daily-target'])throw new Error('Please finish the quiz before continuing with Google.');
+    if(!data.profile||!data.profile.consent||!data['daily-target'])throw new Error('Please finish the quiz before creating your account.');
     if(data.account)delete data.account.pw;
     // Keep the finished quiz outside account storage until Google identifies its owner.
-    rawSet.call(localStorage,QUIZ_PENDING,JSON.stringify({at:Date.now(),data:data}));
+    rawSet.call(localStorage,QUIZ_PENDING,JSON.stringify({at:Date.now(),data:data,email:email||null}));
   }
   async function finishGoogleQuiz(user,rows){
     var raw=lsGet(QUIZ_PENDING);if(!raw)return;
     var pending;try{pending=JSON.parse(raw)}catch(e){lsDel(QUIZ_PENDING);return}
-    if(!pending||!pending.data||Date.now()-pending.at>3600000||!pending.data.profile||!pending.data['daily-target']){lsDel(QUIZ_PENDING);return}
+    if(!pending||!pending.data||(!pending.email&&Date.now()-pending.at>3600000)||!pending.data.profile||!pending.data['daily-target']){lsDel(QUIZ_PENDING);return}
+    if(pending.email&&pending.email!==String(user.email||'').toLowerCase()){lsDel(QUIZ_PENDING);return}
     var existing=(rows||[]).find(function(r){return r.key==='profile'}),profile=null;
     try{profile=existing&&(typeof existing.value==='string'?JSON.parse(existing.value):existing.value)}catch(e){}
     // An established Google account keeps its existing plan and goes straight into the app.
@@ -661,6 +662,44 @@
     }
     location.href=SB_URL+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(location.origin+location.pathname);
   }
+  async function createEmailAccount(em,pwd){
+    em=String(em||'').trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em))throw new Error('Please enter a valid email address.');
+    if(typeof pwd!=='string'||pwd.length<6)throw new Error('Password needs at least 6 characters.');
+    stageGoogleQuiz(em);
+    var d=await authCall('signup',{email:em,password:pwd});
+    if(d.access_token)throw new Error('Email verification is unavailable. Please contact support.');
+    showSignupVerification(em);
+    return {pending:true};
+  }
+  async function verifyEmailAccount(em,code){
+    code=String(code||'').trim();
+    if(!/^\d{6,10}$/.test(code))throw new Error('Enter the verification code from your email.');
+    var d=await authCall('verify',{email:em,token:code,type:'email'});
+    if(!d.access_token||!d.user||!d.user.email_confirmed_at)throw new Error('Your email has not been verified. Please try again.');
+    saveSession(d);
+    await enter(d.user,null);
+  }
+  function showSignupVerification(em){
+    var existing=document.getElementById('nt-signup-verify');if(existing)existing.remove();
+    var panel=document.createElement('div');panel.id='nt-signup-verify';
+    panel.style.cssText='position:fixed;inset:0;z-index:10000;background:#F4F6F2;overflow:auto';
+    panel.innerHTML='<style>'+css+'.ntv .ntl{padding-top:8vh}.ntv .ntl>p{color:#6B726E}</style><form class="ntl" novalidate aria-label="Verify your email">'+
+      '<h1 style="font-size:25px;margin:0 0 12px">Check your email</h1><p>Enter the code sent to <strong id="ntv-email"></strong> to finish signing up.</p>'+
+      '<div class="ntl-shell"><div class="ntl-core"><div id="ntv-edit" hidden><label for="ntv-newemail">Email</label><input id="ntv-newemail" type="email" autocomplete="email" autocapitalize="none"><label for="ntv-password">Password</label><input id="ntv-password" type="password" autocomplete="new-password"><label for="ntv-confirm">Confirm password</label><input id="ntv-confirm" type="password" autocomplete="new-password"></div><div id="ntv-code-field"><label for="ntv-code">Verification code</label><input id="ntv-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" pattern="[0-9]*" type="text"></div>'+
+      '<button type="submit" class="go" id="ntv-submit">Verify email &amp; finish</button><div id="ntv-msg" role="status" aria-live="polite"></div>'+
+      '<button type="button" class="lnk" id="ntv-resend">Resend code</button><button type="button" class="lnk" id="ntv-back">Use a different email</button><button type="button" class="lnk" id="ntv-login">Already have an account? Log in</button></div></div></form>';
+    panel.className='ntv';document.body.appendChild(panel);
+    panel.querySelector('#ntv-email').textContent=em;
+    var f=panel.querySelector('form'),code=panel.querySelector('#ntv-code'),go=panel.querySelector('#ntv-submit'),resend=panel.querySelector('#ntv-resend'),back=panel.querySelector('#ntv-back'),login=panel.querySelector('#ntv-login'),msg=panel.querySelector('#ntv-msg'),busy=false,editing=false,sentAt=Date.now();
+    function say(t,ok){msg.className='msg '+(ok?'ok':'err');msg.textContent=t}
+    function lock(on){busy=on;go.disabled=resend.disabled=back.disabled=login.disabled=on;code.disabled=on}
+    f.onsubmit=async function(ev){ev.preventDefault();if(busy)return;lock(true);say('');go.textContent=editing?'Sending code…':'Verifying…';try{if(editing){var pwd=panel.querySelector('#ntv-password').value;if(pwd!==panel.querySelector('#ntv-confirm').value)throw new Error('The passwords don’t match.');await createEmailAccount(panel.querySelector('#ntv-newemail').value,pwd)}else await verifyEmailAccount(em,code.value);panel.remove()}catch(e){say(!editing&&/expired|invalid|otp/i.test(e.message)?'That code is incorrect or expired. Try again, or request a new code.':e.message);lock(false);go.textContent=editing?'Sign up':'Verify email & finish'}};
+    resend.onclick=async function(){if(busy)return;var wait=Math.ceil((60000-(Date.now()-sentAt))/1000);if(wait>0){say('Please wait '+wait+' seconds before requesting another code.');return}lock(true);try{await authCall('resend',{email:em,type:'signup'});sentAt=Date.now();var pending=JSON.parse(lsGet(QUIZ_PENDING)||'null');if(pending&&pending.email===em){pending.at=Date.now();rawSet.call(localStorage,QUIZ_PENDING,JSON.stringify(pending))}say('A new code has been sent. Check your inbox and spam folder.',true)}catch(e){say(e.message)}finally{lock(false)}};
+    back.onclick=function(){if(busy)return;editing=true;panel.querySelector('#ntv-edit').hidden=false;panel.querySelector('#ntv-code-field').hidden=true;resend.hidden=back.hidden=true;go.textContent='Sign up';panel.querySelector('#ntv-newemail').value=em;panel.querySelector('#ntv-newemail').focus();say('Your quiz answers are saved. Enter your email and choose a password.',true)};
+    login.onclick=function(){if(busy)return;lsDel(QUIZ_PENDING);lsSet('ntloginrequest','1');reloadApp()};
+    code.focus();
+  }
   /* ---------- quiz first: new members answer the quiz, then make their account at the end ---------- */
   function startQuiz(fresh){
     if(fresh){lsDel(QUIZ_PENDING); /* "New here?" on a phone someone used before: start clean, nobody sees the last member's data */
@@ -671,16 +710,7 @@
     rawSet.call(localStorage,'ntguest','1');
     window.ntShowLogin=function(){try{localStorage.setItem('ntloginrequest','1')}catch(e){}reloadApp()};
     window.ntGoogle=googleStart;
-    window.ntCreateAccount=async function(em,pwd){
-      try{
-        var d=await authCall('signup',{email:em,password:pwd});
-        if(d.access_token){saveSession(d);reloadApp();return ''} /* the first login keeps the quiz answers (see pullFromCloud) */
-        return 'Almost there. We sent a link to '+em+'. Tap it to confirm your email, then log in. Your plan is saved on this phone.';
-      }catch(err){
-        var m=String(err&&err.message||'');
-        return /already registered|already exists/i.test(m)?'This email already has an account. Tap \u201cAlready a member? Log in\u201d at the top of the quiz.':/password/i.test(m)?'Please choose a stronger password (6+ characters, not a common one).':'Couldn\u2019t create your account. Check your connection and try again.';
-      }
-    };
+    window.ntCreateAccount=createEmailAccount;
     startApp();
   }
   function showLogin(note){
@@ -799,6 +829,7 @@
         saveSession(null);showLogin('Please log in again.');return;
       }
     }
+    try{var pendingSignup=JSON.parse(lsGet(QUIZ_PENDING)||'null');if(pendingSignup&&pendingSignup.email&&pendingSignup.data){showSignupVerification(pendingSignup.email);return}}catch(e){}
     var wantLogin=lsGet('ntloginrequest')==='1';lsDel('ntloginrequest');try{wantLogin=wantLogin||sessionStorage.getItem('ntlogin')==='1';sessionStorage.removeItem('ntlogin')}catch(e){}
     if(!wantLogin&&lsGet(OWNER_KEY)===null){startQuiz(false);return}
     showLogin();
