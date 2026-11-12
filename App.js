@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, AppState, BackHandler, Linking, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, AppState, BackHandler, Linking, PermissionsAndroid, Platform, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -12,6 +12,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { readDailySteps } from './native/healthSteps';
 import Purchases from 'react-native-purchases';
 import { createTestBilling } from './native/revenueCat';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Asset } from 'expo-media-library';
+import { saveGalleryImage } from './native/saveImage';
 const testBilling = createTestBilling(Purchases, { allowTestStore: __DEV__ });
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -120,6 +123,13 @@ async function handleMessage(raw, web, reload) {
   let msg;
   try { msg = JSON.parse(raw); } catch { return; }
   if (!msg || typeof msg.id !== 'string') return;
+  if (msg.type === 'save-image') {
+    let result={id:msg.id};
+    try { await saveGalleryImage(msg,{FileSystem,Asset,Platform,PermissionsAndroid}); }
+    catch(error) { result.error=error.message||'Couldn’t save this image.'; }
+    if(web)web.injectJavaScript(`window.ntSavedImage&&window.ntSavedImage(${JSON.stringify(result)});true;`);
+    return;
+  }
   if (msg.type === 'revenuecat') {
     let result;
     try { result = { id: msg.id, ...(await testBilling(msg)) }; }
@@ -195,6 +205,7 @@ export default function App() {
           originWhitelist={['*']}
           source={{ html: appHtml, baseUrl: BASE_URL }}
           javaScriptEnabled
+          injectedJavaScriptBeforeContentLoaded={'window.NT_GALLERY_SAVE=true;true;'}
           domStorageEnabled
           allowFileAccess
           mediaPlaybackRequiresUserAction={false}
