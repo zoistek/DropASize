@@ -2,16 +2,27 @@ async function trainingCatalog(){
   var results=await Promise.all([fetch('../training-catalog.json').then(function(r){if(!r.ok)throw new Error('The exercise library could not be loaded. Refresh the admin page.');return r.json()}),db.doc('config','custom-exercises')]);
   return {exercises:results[0].exercises.concat((results[1]&&results[1].list)||[]),rests:results[0].rests};
 }
+async function saveCustomExercise(item){
+  var doc=await db.doc('config','custom-exercises')||{},list=(doc.list||[]).filter(function(ex){return ex.id!==item.id});
+  list.push(JSON.parse(JSON.stringify(item)));
+  await db.docSet('config','custom-exercises',{list:list,updatedAt:new Date().toISOString()});
+}
 function customExerciseDialog(onSaved,existing){
   var item=existing?JSON.parse(JSON.stringify(existing)):{id:'custom-ex-'+crypto.randomUUID(),custom:true,n:'',cue:'',r:'10',s:60,images:null};
+  var draftKey='nt-custom-exercise-draft:'+session.user.id;
+  if(!existing)try{var draft=JSON.parse(localStorage.getItem(draftKey)||'null');if(draft&&draft.custom&&draft.id)item=draft}catch(e){}
   var modal=document.createElement('div');modal.className='modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','Custom exercise');
   modal.innerHTML='<div class="sheet" style="max-width:620px"><h2>Custom exercise</h2><label class="f" for="ce-name">Exercise name</label><input class="i" id="ce-name" maxlength="120" value="'+esc(item.n)+'"><label class="f" for="ce-details">Instructions and movement details</label><textarea class="i" id="ce-details" rows="4" maxlength="3000">'+esc(item.cue)+'</textarea><div class="fields"><div><label class="f" for="ce-reps">Reps</label><input class="i" id="ce-reps" maxlength="40" value="'+esc(item.r)+'"></div><div><label class="f" for="ce-seconds">Exercise time (seconds)</label><input class="i" type="number" id="ce-seconds" min="1" max="3600" value="'+item.s+'"></div></div><label class="f" for="ce-prompt">Image guidance / redo prompt (optional)</label><textarea class="i" id="ce-prompt" rows="3" maxlength="2000" placeholder="Describe the starting and ending pose, camera angle or equipment."></textarea><button class="btn ghost" id="ce-generate" style="margin-top:12px">'+(item.images?'Redo before & after images':'Generate before & after images')+'</button><div id="ce-images" class="grid two" style="margin-top:14px"></div><div id="ce-message" role="status" aria-live="polite"></div><div class="row end" style="gap:10px;margin-top:16px"><button class="btn ghost" id="ce-cancel">Cancel</button><button class="btn" id="ce-save">Save custom exercise</button></div></div>';
-  document.body.appendChild(modal);var busy=false;
+  document.body.appendChild(modal);var busy=false,autoSaved=false;
+  $('#ce-prompt',modal).value=item.prompt||'';
   function message(text,error){var el=$('#ce-message',modal);el.className=error?'err':'small mut';el.textContent=text}
   function collect(){item.n=$('#ce-name',modal).value.trim();item.cue=$('#ce-details',modal).value.trim();item.r=$('#ce-reps',modal).value.trim();item.s=Number($('#ce-seconds',modal).value);if(!item.n||!item.cue)throw new Error('Add the exercise name and movement details.');if(!Number.isInteger(item.s)||item.s<1||item.s>3600)throw new Error('Exercise time must be 1–3,600 seconds.');return item}
+  function stash(){item.n=$('#ce-name',modal).value;item.cue=$('#ce-details',modal).value;item.r=$('#ce-reps',modal).value;item.s=Number($('#ce-seconds',modal).value);item.prompt=$('#ce-prompt',modal).value;try{localStorage.setItem(draftKey,JSON.stringify(item));return true}catch(e){return false}}
+  function clearDraft(){try{localStorage.removeItem(draftKey)}catch(e){}}
   function images(){var box=$('#ce-images',modal);box.innerHTML=item.images?['before','after'].map(function(p){return '<div><b>'+p[0].toUpperCase()+p.slice(1)+'</b><img src="'+esc(item.images[p])+'" alt="'+esc(item.n+' '+p)+'" style="width:100%;border-radius:14px;display:block"></div>'}).join(''):''}
   function lock(on){busy=on;$$('input,textarea,button',modal).forEach(function(el){el.disabled=on})}
-  $('#ce-cancel',modal).onclick=function(){if(!busy)modal.remove()};
+  $$('input,textarea',modal).forEach(function(el){el.oninput=function(){autoSaved=false;stash()}});
+  $('#ce-cancel',modal).onclick=function(){if(busy)return;if(autoSaved)clearDraft();else stash();modal.remove()};
   $('#ce-generate',modal).onclick=async function(){
     if(busy)return;try{collect()}catch(e){message(e.message,true);return}lock(true);message('Generating both images. This can take up to two minutes.');
     try{
@@ -19,10 +30,12 @@ function customExerciseDialog(onSaved,existing){
       var data={};try{data=await response.json()}catch(e){}
       if(!response.ok)throw new Error(response.status===404?'The image tool has not been activated yet.':typeof data.error==='string'?data.error:'Image generation failed. Please try again.');
       if(!data.images||!data.images.before||!data.images.after)throw new Error('The image service did not return both images. Your previous images have been kept.');
-      item.images=data.images;images();$('#ce-generate',modal).textContent='Redo before & after images';message('Both images are ready. Check the poses, then save the exercise.');
+      item.images=data.images;stash();images();$('#ce-generate',modal).textContent='Redo before & after images';
+      try{await saveCustomExercise(item);autoSaved=true;onSaved(item);$('#ce-cancel',modal).textContent='Close';message('Exercise and images saved and added to the session. Review the images, then close this popup or save any further edits.')}
+      catch(saveError){message('Images generated, but the exercise could not be saved: '+saveError.message+'. Click Save custom exercise to retry without generating again.',true)}
     }catch(e){message(e.name==='TimeoutError'?'Image generation took too long. Your details and previous images are kept; try again.':e.message,true)}finally{lock(false)}
   };
-  $('#ce-save',modal).onclick=async function(){if(busy)return;try{collect();if(!item.images||!item.images.before||!item.images.after)throw new Error('Generate both before and after images before saving this exercise.');lock(true);var doc=await db.doc('config','custom-exercises')||{},list=(doc.list||[]).filter(function(ex){return ex.id!==item.id});list.push(item);await db.docSet('config','custom-exercises',{list:list,updatedAt:new Date().toISOString()});modal.remove();onSaved(item)}catch(e){message(e.message,true);lock(false)}};
+  $('#ce-save',modal).onclick=async function(){if(busy)return;try{stash();collect();if(!item.images||!item.images.before||!item.images.after)throw new Error('Generate both before and after images before saving this exercise.');lock(true);await saveCustomExercise(item);clearDraft();modal.remove();onSaved(item)}catch(e){message(e.message,true);lock(false)}};
   images();$('#ce-name',modal).focus();
 }
 async function customPlanEditor(plans,index,done){
@@ -44,7 +57,7 @@ async function customPlanEditor(plans,index,done){
   function options(){var query=$('#ct-search',modal).value.trim().toLowerCase();$('#ct-exercise',modal).innerHTML=catalog.exercises.filter(function(item){return item.n.toLowerCase().includes(query)}).map(function(item){return '<option value="'+esc(item.id)+'">'+esc(item.n)+(item.custom?' · Custom':'')+'</option>'}).join('');defaults()}
   function currentExercise(){var id=$('#ct-exercise',modal).value;return catalog.exercises.find(function(item){return item.id===id})}
   function defaults(){var item=currentExercise();if(item){$('#ct-seconds',modal).value=item.s||60;$('#ct-reps',modal).value=item.r||''}$('#ct-edit-ex',modal).hidden=!(item&&item.custom)}
-  function customSaved(item){catalog.exercises=catalog.exercises.filter(function(ex){return ex.id!==item.id});catalog.exercises.push(item);plan.items=plan.items.map(function(ex){return ex.id===item.id?Object.assign({},item,{s:ex.s,r:ex.r}):ex});rows();$('#ct-search',modal).value='';options();$('#ct-exercise',modal).value=item.id;defaults();message('Custom exercise saved. Click Add exercise to put it in this session.')}
+  function customSaved(item){catalog.exercises=catalog.exercises.filter(function(ex){return ex.id!==item.id});catalog.exercises.push(item);var present=plan.items.some(function(ex){return ex.id===item.id});plan.items=plan.items.map(function(ex){return ex.id===item.id?Object.assign({},item,{s:ex.s,r:ex.r}):ex});if(!present)plan.items.push(JSON.parse(JSON.stringify(item)));rows();$('#ct-search',modal).value='';options();$('#ct-exercise',modal).value=item.id;defaults();message('Custom exercise saved and added to this session.')}
   function memberRows(){var query=$('#ct-members-search',modal).value.trim().toLowerCase(),matches=users.filter(function(user){return ((user.profile&&user.profile.name||'')+' '+user.email).toLowerCase().includes(query)});$('#ct-members',modal).innerHTML=matches.slice(0,50).map(function(user){return '<label class="row" style="gap:8px;padding:8px 0"><input type="checkbox" data-ct-member="'+user.id+'"'+(selected.has(user.id)?' checked':'')+'><span><b>'+esc(user.profile&&user.profile.name||user.email)+'</b><span class="small mut" style="display:block">'+esc(user.email)+'</span></span></label>'}).join('')||'<p class="small mut">No members found.</p>';$('#ct-selected',modal).textContent=selected.size+' selected'+(matches.length>50?' · Narrow your search to see more results.':'');$$('[data-ct-member]',modal).forEach(function(el){el.onchange=function(){if(el.checked)selected.add(el.dataset.ctMember);else selected.delete(el.dataset.ctMember);$('#ct-selected',modal).textContent=selected.size+' selected'}})}
   async function persist(){fields();window.NtTraining.validate(plan);var fresh=await getPlans(),list=fresh.filter(function(p){return p.id!==plan.id});list.push(JSON.parse(JSON.stringify(plan)));await db.docSet('config','plans',{list:list,updatedAt:new Date().toISOString()});plans.length=0;list.forEach(function(p){plans.push(p)});done()}
   $('#ct-search',modal).oninput=options;$('#ct-exercise',modal).onchange=defaults;$('#ct-minutes',modal).oninput=rows;
@@ -52,11 +65,11 @@ async function customPlanEditor(plans,index,done){
   $('#ct-add-rest',modal).onclick=function(){var rest=catalog.rests.find(function(item){return item.s===Number($('#ct-rest',modal).value)});if(rest){plan.items.push(Object.assign({},rest));rows()}};
   $('#ct-new',modal).onclick=function(){customExerciseDialog(customSaved)};$('#ct-edit-ex',modal).onclick=function(){var item=currentExercise();if(item&&item.custom)customExerciseDialog(customSaved,item)};
   $('#ct-cancel',modal).onclick=function(){if(!busy)modal.remove()};$('#ct-members-search',modal).oninput=memberRows;
-  $('#ct-save',modal).onclick=async function(){if(busy)return;lock(true);try{await persist();message('Custom plan saved. Choose members and click Assign when ready.')}catch(e){message(e.message,true)}finally{lock(false)}};
+  $('#ct-save',modal).onclick=async function(){if(busy)return;lock(true);try{await persist();modal.remove();toast('Custom training plan saved.')}catch(e){message(e.message,true)}finally{lock(false)}};
   $('#ct-assign',modal).onclick=async function(){
     if(busy)return;if(!selected.size){message('Choose at least one member by name or email.',true);return}
     var start=$('#ct-start',modal).value;if(!/^\d{4}-\d{2}-\d{2}$/.test(start)){message('Choose the plan start date.',true);return}lock(true);
-    try{await persist();var success=[],failed=[];for(var id of Array.from(selected)){var user=users.find(function(u){return u.id===id});if(!user)continue;var at=new Date().toISOString(),assigned=window.NtTraining.assignment(plan,start);assigned.coachAppliedAt=at;try{await db.userSet(id,'coach-plan',{plan:assigned,assignedAt:at,by:session.user.email});success.push(user.email);selected.delete(id)}catch(e){failed.push(user.email+': '+e.message)}}message((success.length?'Assigned to '+success.join(', ')+'. Members will see a notification when they open the app or it next syncs. ':'')+(failed.length?'Not assigned: '+failed.join('; '):''),!!failed.length);memberRows()}catch(e){message(e.message,true)}finally{lock(false)}
+    try{await persist();var success=[],failed=[];for(var id of Array.from(selected)){var user=users.find(function(u){return u.id===id});if(!user)continue;var at=new Date().toISOString(),assigned=window.NtTraining.assignment(plan,start);assigned.coachAppliedAt=at;try{await db.userSet(id,'coach-plan',{plan:assigned,assignedAt:at,by:session.user.email});success.push(user.email);selected.delete(id)}catch(e){failed.push(user.email+': '+e.message)}}if(!failed.length&&success.length){modal.remove();toast('Custom plan assigned to '+success.join(', ')+'.')}else{message((success.length?'Assigned to '+success.join(', ')+'. ':'')+(failed.length?'Not assigned: '+failed.join('; '):'No member was assigned. Select a member and try again.'),true);memberRows()}}catch(e){message(e.message,true)}finally{lock(false)}
   };
   rows();options();$('#ct-members',modal).textContent='Loading members…';try{users=(await rest('POST','rpc/admin_users',{})).filter(function(user){return user.role!=='coach'});memberRows()}catch(e){$('#ct-members',modal).textContent='Could not load members: '+e.message}
 }

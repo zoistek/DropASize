@@ -17,15 +17,19 @@ is not a separate hand-maintained exercise list.
 
 Create custom exercise accepts name, detailed movement instructions, reps, seconds
 and optional image guidance. Generate/Redo creates a matching before/after pair.
-The coach previews both images before saving. A failed generation keeps the form
-and any previous images; it does not replace a saved pair with an incomplete one.
+A completed pair is saved immediately with the exercise and added to the open
+session. The coach can review it and save further edits. Form details and returned
+image URLs are also backed up as a local draft; a failed cloud save can be retried
+without generating again. A failed generation keeps previous images. Saving again
+updates the existing session slot rather than adding a duplicate.
 Editing a custom exercise updates matching slots in the open builder while keeping
 their chosen durations/reps. Previously assigned plans retain their own snapshot.
 
 Search member names or emails, select recipients and click Assign custom plan.
 The template is saved first; assignments write the existing managed `coach-plan`
 key for each selected member. Failures are reported per recipient, and successful
-recipients are removed from the retry selection. No existing member was assigned
+recipients are removed from the retry selection. Save plan and a fully successful
+assignment close the builder; errors keep it open for correction or retry. No existing member was assigned
 a plan during implementation. The existing per-member template selector also
 understands these custom templates.
 
@@ -55,7 +59,7 @@ The existing GitHub secret named VOICE is a Gemini API key, used by both the voi
 and exercise-art workflows. Supabase cannot read GitHub secrets. Add **VOICE** to
 Supabase > Edge Functions > Secrets using that same AI Studio key. Alternatively,
 GEMINI_API_KEY is accepted. Do not put the key in client code or in GitHub files.
-The live endpoint reported `key_ready=false` during setup.
+The live endpoint reported `key_ready=true` after the key was configured.
 
 The default image model is gemini-3.1-flash-image, matching the current art workflow;
 GEMINI_IMAGE_MODEL can override it. The backend makes one start-pose request, then
@@ -65,15 +69,17 @@ timeouts, provider failures, blocked/no-image responses and upload failures have
 clear messages. Partial uploaded pairs are cleaned up. Generated anatomy and pose
 accuracy still require the coach's visual review.
 
-No real image generation or AI charges were triggered while implementing this.
-The key, actual Google generation, a signed-in coach browser flow and a real
-member-device notification still need a user-controlled end-to-end check.
+The coach has successfully generated image pairs. The save/close fixes use mocked
+checks without further image generation or AI charges. A real member-device
+notification still needs a user-controlled end-to-end check.
 
 ## Verification and rollback
 
 `node tools/tests/custom-training.test.js` covers timing, overrun validation,
 assignment snapshots, rest slots without implicit extra rests, one-to-seven-day
 schedules, existing player/log wiring, custom artwork and acknowledged notices.
+`node tools/tests/custom-training-save.test.js` covers immediate exercise saving,
+failed-save retry, duplicate prevention and successful save/assign popup closing.
 `node tools/tests/training-images.test.js` covers auth, two-image requests, redo
 guidance, provider/error cases, upload cleanup and key leakage using mocks.
 Related signup, Today, moderation and Android regression checks pass. JavaScript
