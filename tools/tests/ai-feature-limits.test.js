@@ -2,8 +2,9 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),{stripTypeScriptTypes}=require('node:module');
 let source=fs.readFileSync(__dirname+'/../../supabase/functions/ai-feature-test/index.ts','utf8').replace(/^import .*;\n/gm,'');
 source=stripTypeScriptTypes(source);
-let handler,user='member-a',fail=false,apiCalls=0;
+let handler,user='member-a',fail=false,apiCalls=0,active=true;
 const counts=new Map(),mockClient={auth:{getUser:async()=>({data:{user:user?{id:user}:null}})},rpc:async(name,p)=>{
+ if(name==='account_status')return {data:active?'active':'banned'};
  const key=user+':'+p.p_kind,n=counts.get(key)||0;
  if(name==='ai_feature_take'){if(n>=p.p_limit)return {data:-1};counts.set(key,n+1);return {data:n+1}}
  if(name==='ai_feature_refund'){counts.set(key,Math.max(0,n-1));return {data:null}}
@@ -30,6 +31,7 @@ const build=prompt=>handler(new Request('https://test/ai-test',{method:'POST',bo
  assert.equal(ctx.kindOf([{content:'[DropASize:shopping_list] Week list'}]),'shopping_list');
  user='member-b';assert.equal((await build(features.shop)).status,200);fail=true;assert.equal((await build(features.shop)).status,502);assert.equal(counts.get('member-b:shop'),1);fail=false;
  user='member-a';assert.equal((await build(features.shop)).status,429);
+ active=false;const callsBeforeBan=apiCalls;assert.equal((await build('blocked request')).status,403);assert.equal(apiCalls,callsBeforeBan);active=true;
  user=null;assert.equal((await build('no login')).status,401);
  const gate=fs.readFileSync(__dirname+'/../../web/gate.js','utf8');assert(gate.includes("SB_URL+'/functions/v1/ai-feature-test'"));
  console.log('Feature limits passed: 13 independent 5-build allowances, 20 messages, shared Shop bucket, concurrency, account isolation, refunds and authentication');

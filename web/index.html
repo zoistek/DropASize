@@ -1000,13 +1000,25 @@ html,body,#root{max-width:100%;overflow-x:hidden}
   };
   /* Deleted somewhere else (the web page, or by the coach)? Sign out here too. Only a missing account counts, not an expired login. */
   function gone(){saveSession(null);try{localStorage.clear()}catch(e){}reloadApp()}
+  function banned(){saveSession(null);try{localStorage.clear();lsSet('ntbannotice','1');lsSet('ntloginrequest','1')}catch(e){}reloadApp()}
+  async function accountStatus(){
+    var r=await realFetch(SB_URL+'/rest/v1/rpc/account_status',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:'{}'});
+    if(!r.ok){
+      var error={};try{error=await r.json()}catch(e){}
+      // shortcut: preserve existing app access before the moderation RPC is deployed; remove after activation.
+      if(error.code==='PGRST202')return 'active';
+      throw new Error('Could not verify your account. Please log in again.');
+    }
+    return r.json();
+  }
   async function checkStillExists(){
     if(!session||!session.access_token)return;
-    try{var r=await realFetch(SB_URL+'/auth/v1/user',{headers:{apikey:SB_KEY,Authorization:'Bearer '+session.access_token}});
+    try{var status=await accountStatus();if(status==='banned'){banned();return}if(status==='deleted'){gone();return}var r=await realFetch(SB_URL+'/auth/v1/user',{headers:{apikey:SB_KEY,Authorization:'Bearer '+session.access_token}});
       if(r.status===401||r.status===403||r.status===404){var t=await r.text();if(/not exist|not found|user_not_found/i.test(t))gone()}}catch(e){}
   }
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkStillExists()});
   window.addEventListener('focus',checkStillExists);
+  setInterval(checkStillExists,30000);
 
   /* Test Store bridge. Client results are previews, never backend access grants. */
   var billingPending={},billingSequence=0;
@@ -1075,6 +1087,9 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     var s=document.createElement('script');s.text=src.textContent;document.body.appendChild(s);
   }
   async function enter(user,password){
+    var status=await accountStatus();
+    if(status!=='active'){if(status==='banned')banned();else gone();throw new Error(status==='banned'?'Account banned. You can no longer use DropASize.':'This account has been deleted.')}
+    lsDel('ntbannotice');
     var rows=await pullFromCloud(user);
     await finishGoogleQuiz(user,rows);
     origSetSilent('nt:session','in');
@@ -1313,6 +1328,7 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     }
     try{var pendingSignup=JSON.parse(lsGet(QUIZ_PENDING)||'null');if(pendingSignup&&pendingSignup.email&&pendingSignup.data){showSignupVerification(pendingSignup.email);return}}catch(e){}
     var wantLogin=lsGet('ntloginrequest')==='1';lsDel('ntloginrequest');try{wantLogin=wantLogin||sessionStorage.getItem('ntlogin')==='1';sessionStorage.removeItem('ntlogin')}catch(e){}
+    if(lsGet('ntbannotice')==='1'){showLogin('Account banned. You can no longer use DropASize. Contact your coach if you have questions.');return}
     if(!wantLogin&&lsGet(OWNER_KEY)===null){startQuiz(false);return}
     showLogin();
   }

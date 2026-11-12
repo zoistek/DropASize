@@ -1,0 +1,28 @@
+const fs=require('fs'),assert=require('assert'),{stripTypeScriptTypes}=require('node:module');
+(async()=>{
+ const {createHandler}=await import('data:text/javascript,'+encodeURIComponent(stripTypeScriptTypes(fs.readFileSync('supabase/functions/coach-members-test/handler.ts','utf8'))));
+ const actor='11111111-1111-4111-8111-111111111111',member='22222222-2222-4222-8222-222222222222';let counter=0;
+ function fixture(){
+  const state={coach:true,active:true,mail:true,failMail:false,user:true,mutations:[],sent:[],deleted:false,files:[{name:'photo.jpg'}],users:{[member]:{id:member,email:'member@example.invalid'},[actor]:{id:actor,email:'coach@example.invalid'}},tables:{profiles:[{id:member,role:'member'},{id:actor,role:'coach'}],coach_emails:[],member_actions:[],shared_docs:[]}};
+  function from(table){let op='select',payload,filters=[];
+   const query={select(){return query},eq(k,v){filters.push(row=>row[k]===v);return query},neq(k,v){filters.push(row=>row[k]!==v);return query},order(){return query},limit(){return query},insert(v){op='insert';payload=v;return query},update(v){op='update';payload=v;return query},delete(){op='delete';return query},maybeSingle:async()=>{const r=await run();return {...r,data:r.data[0]||null}},then(resolve,reject){return run().then(resolve,reject)}};
+   async function run(){const rows=state.tables[table]||[];let match=rows.filter(row=>filters.every(fn=>fn(row)));if(op==='insert'){state.tables[table].push(structuredClone(payload));match=[payload]}if(op==='update')match.forEach(row=>Object.assign(row,payload));if(op==='delete')state.tables[table]=rows.filter(row=>!match.includes(row));return {data:match,error:null}}return query;
+  }
+  const admin={from,rpc:async(name,args)=>{state.mutations.push(name);return {data:null,error:null}},storage:{from:()=>({list:async()=>({data:state.files,error:null}),remove:async()=>{state.files=[];return {data:[],error:null}}})},auth:{admin:{getUserById:async id=>({data:{user:state.users[id]},error:state.users[id]?null:Error('missing')}),updateUserById:async(id,patch)=>{state.mutations.push(['update',id,patch]);state.users[id].banned_until=patch.ban_duration==='none'?null:'2126-01-01';return {data:{user:state.users[id]},error:null}},deleteUser:async id=>{state.mutations.push(['delete',id]);delete state.users[id];state.deleted=true;return {data:{},error:null}}}}};
+  const handler=createHandler({admin,caller:()=>({auth:{getUser:async()=>({data:{user:state.user?{id:actor}:null},error:null})},rpc:async name=>({data:name==='is_coach'?state.coach:state.active?'active':'banned',error:null})}),mailConfigured:()=>state.mail,sendMail:async event=>{if(state.failMail)throw Error('SMTP down');state.sent.push(structuredClone(event))}});
+  const call=async(action,body={})=>{const response=await handler(new Request('https://example.invalid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,user_id:member,request_id:'33333333-3333-4333-8333-'+String(++counter).padStart(12,'0'),...body})}));return {status:response.status,body:await response.json()}};
+  return {state,call};
+ }
+ let f=fixture();f.state.coach=false;assert.equal((await f.call('ban')).status,403);assert.equal(f.state.mutations.length,0);
+ f=fixture();f.state.active=false;assert.equal((await f.call('delete',{confirmation:'DELETE'})).status,403);
+ f=fixture();f.state.user=false;assert.equal((await f.call('status')).status,401);
+ f=fixture();assert.equal((await f.call('ban',{user_id:actor})).status,403);assert.equal(f.state.sent.length,0);
+ f=fixture();f.state.mail=false;assert.equal((await f.call('ban')).status,503);assert.equal(f.state.mutations.length,0);
+ f=fixture();assert.equal((await f.call('delete',{confirmation:'wrong'})).status,400);assert.equal(f.state.deleted,false);
+ f=fixture();const requestId='44444444-4444-4444-8444-444444444444';let r=await f.call('ban',{request_id:requestId,reason:'Community rules'});assert.equal(r.status,200);assert(r.body.email_sent);assert(f.state.mutations.includes('moderation_revoke_sessions'));assert.equal(f.state.sent[0].recipient,'member@example.invalid');assert.equal(f.state.sent[0].reason,'Community rules');assert.equal(f.state.tables.member_actions[0].recipient,null);await f.call('ban',{request_id:requestId});assert.equal(f.state.sent.length,1);
+ r=await f.call('unban');assert(r.body.email_sent);assert.equal(f.state.users[member].banned_until,null);
+ f=fixture();f.state.failMail=true;r=await f.call('delete',{confirmation:'DELETE'});assert(r.body.ok);assert(!r.body.email_sent);assert(f.state.deleted);assert.equal(f.state.files.length,0);assert.equal(f.state.tables.member_actions[0].email_status,'failed');f.state.failMail=false;const retry=await f.call('retry_email',{event_id:r.body.event_id});assert(retry.body.email_sent);assert.equal(f.state.sent[0].action,'delete');assert.equal(f.state.sent[0].recipient,'member@example.invalid');
+ f=fixture();r=await f.call('ban',{reason:'x'.repeat(501)});assert.equal(r.status,400);assert.equal(f.state.sent.length,0);
+ const ui=fs.readFileSync('web/adminMembers.js','utf8'),gate=fs.readFileSync('web/gate.js','utf8');assert(!/\b(confirm|prompt)\(/.test(ui));assert(ui.includes("typed.value.trim()!=='DELETE'"));assert(gate.includes("status==='banned'"));assert(gate.includes('setInterval(checkStillExists,30000)'));
+ console.log('Moderation passed: authentication, coach-only access, protected accounts, SMTP fail-closed, deletion confirmation, ban/session revocation, unban, duplicate request, deletion cleanup and post-deletion email retry. No real account or email used.');
+})().catch(e=>{console.error(e);process.exitCode=1});

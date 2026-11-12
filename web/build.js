@@ -23,3 +23,8 @@ inject(['/* DropASize app layer', '/* Nourish&Thrive app layer'], 'gate.js');
 fs.writeFileSync(path.join(dir, 'index.html'), html);
 fs.writeFileSync(path.join(dir, 'appHtml.js'), '// Generated from web/index.html by web/build.js. Do not edit by hand.\nexport default ' + JSON.stringify(html) + ';\n');
 console.log('built', html.length);
+const adminFile=path.join(dir,'admin.html');
+let adminHtml=fs.readFileSync(adminFile,'utf8');
+if(!adminHtml.includes('/* END_MEMBER_MODERATION */'))adminHtml=adminHtml.replace('/* MEMBER_MODERATION */','/* MEMBER_MODERATION */\n/* END_MEMBER_MODERATION */');
+adminHtml=adminHtml.replace(/\/\* MEMBER_MODERATION \*\/[\s\S]*?\/\* END_MEMBER_MODERATION \*\//,()=> '/* MEMBER_MODERATION */\n'+fs.readFileSync(path.join(dir,'adminMembers.js'),'utf8')+'\n/* END_MEMBER_MODERATION */');
+fs.writeFileSync(adminFile,adminHtml);

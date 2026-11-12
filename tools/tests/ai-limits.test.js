@@ -2,8 +2,9 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),{stripTypeScriptTypes}=require('node:module');
 let source=fs.readFileSync(__dirname+'/../../supabase/functions/ai-test/index.ts','utf8').replace(/^import .*;\n/gm,'');
 source=stripTypeScriptTypes(source);
-let handler,user='member-a',fail=false,apiCalls=0;
+let handler,user='member-a',fail=false,apiCalls=0,active=true;
 const counts=new Map(),mockClient={auth:{getUser:async()=>({data:{user:user?{id:user}:null}})},rpc:async(name,p)=>{
+ if(name==='account_status')return {data:active?'active':'banned'};
  const key=user+':'+p.p_kind,n=counts.get(key)||0;
  if(name==='ai_take'){if(n>=p.p_limit)return {data:-1};counts.set(key,n+1);return {data:n+1}}
  if(name==='ai_refund'){counts.set(key,Math.max(0,n-1));return {data:null}}
@@ -23,6 +24,7 @@ const build=prompt=>handler(new Request('https://test/ai-test',{method:'POST',bo
  user='member-b';assert.equal((await build('A meal plan')).status,200);fail=true;assert.equal((await build('another meal plan')).status,502);assert.equal(counts.get('member-b:recipe'),1);fail=false;
  // A new handler context/device cannot reset the server's existing account count.
  user='member-a';assert.equal((await build('new device plan')).status,429);
+ active=false;const callsBeforeBan=apiCalls;assert.equal((await build('blocked request')).status,403);assert.equal(apiCalls,callsBeforeBan);active=true;
  user=null;assert.equal((await build('no login')).status,401);
  const gate=fs.readFileSync(__dirname+'/../../web/gate.js','utf8');assert(gate.includes("SB_URL+'/functions/v1/ai-feature-test'"));
  console.log('AI limits passed: shared 5 builds, separate 20 messages, concurrent requests, account isolation, refunds, signed-in access and test routing');
