@@ -6,6 +6,7 @@ import {createHandler} from "./handler.ts";
 const env=(key:string)=>Deno.env.get(key)||'';
 const admin=createClient(env('SUPABASE_URL'),env('SUPABASE_SERVICE_ROLE_KEY'));
 const mailConfigured=()=>!!(env('SMTP_HOSTNAME')&&env('SMTP_USERNAME')&&env('SMTP_PASSWORD')&&env('SMTP_FROM')&&env('SMTP_PORT')==='465');
+console.info('member-notifications smtp_ready='+mailConfigured());
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 async function sendMail(event:any){
  if(!mailConfigured())throw Error('SMTP not configured');

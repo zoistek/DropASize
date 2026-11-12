@@ -1,29 +1,26 @@
 # Member moderation on test
 
-## Current activation blocker
+## Deployed state
 
-The UI, protected Edge Function and notification delivery/retry code are prepared.
-No real member has been banned, deleted or emailed during implementation.
-Automatic approval review rejected both the first all-table policy proposal and
-the smaller private-member-data policy proposal. **No migration was applied.**
-Backend deployment was also rejected by automatic approval review because it changes a live endpoint. No Edge Function was deployed. The prepared Edge Function returns a setup error while `account_status` is unavailable;
-moderation cannot run. Existing app access stays as before until that RPC exists.
-Existing AI services are not redeployed before the schema is approved and active.
+The explicitly approved SQL in `tools/supabase/member-moderation.sql` has been
+applied. The protected `coach-members-test` Edge Function is deployed with JWT
+verification enabled. No real member was banned, deleted or emailed during setup.
+The app changes stay on `test`; no APK was built.
 
-The reviewed SQL is `tools/supabase/member-moderation.sql`. It adds a service-only
-action/delivery record, a self-only account-status RPC, service-only session
-revocation, and restrictive policies on profiles, saved user data, coach notes,
-reports and Storage. Shared documents receive write restrictions only. Existing
-ownership and coach policies remain in place; no new member data access is granted.
-The policies block banned/deleted users even if an access JWT has not yet expired.
-This is a **shared backend**, so database changes apply to the installed app too.
-No existing user records are deleted by the migration itself.
+The migration validated normal profile and saved-data access for every existing
+active account and coach dashboard access before committing. Fourteen accounts and
+141 saved-data records remained unchanged. Transaction-only fixture tests confirmed:
 
-The migration now validates profile/saved-data access for every existing active account and coach dashboard access before committing; any failure aborts the transaction. Automatic review still rejected the attempt after the user’s conditional approval ("as long as this doesn’t break my app and it’s reversible"), because it requires explicit approval of the live migration. No schema changes were applied. Explicit approval is needed before retrying this schema deployment. The risk is
-that incorrect access rules could interrupt existing reads/writes. Fourteen
-existing accounts were checked during preparation; none was banned.
+- Active members can read and write their own saved data.
+- Banned/deleted users cannot access saved data with an existing JWT.
+- Ordinary members cannot call the session-revocation function.
+- The service role can revoke the fixture's session.
 
-## Email configuration
+All fixture changes were rolled back. The action/delivery ledger is inaccessible
+to ordinary clients and is used only by the protected backend. The new RLS-no-policy
+advisor notice on this ledger is intentional: service-role-only access was verified.
+
+## Email configuration still required
 
 Custom notifications use the same IONOS mailbox as Auth emails, but Edge Functions
 cannot read Auth's SMTP password. Under Supabase > Edge Functions > Secrets, set:
@@ -36,42 +33,49 @@ cannot read Auth's SMTP password. Under Supabase > Edge Functions > Secrets, set
 | `SMTP_PASSWORD` | The mailbox password |
 | `SMTP_FROM` | The mailbox's sender email address |
 
-Keep passwords out of GitHub and client code. Moderation actions are disabled
-until these settings are present. A completed ban/delete is emailed afterward;
-if SMTP fails, the coach sees that it failed and can retry from the dialog or the
-Members list, including after the account has been deleted. SMTP acceptance is
-reported accurately; inbox delivery and spam placement cannot be guaranteed.
-Successful notification records clear their stored recipient email address.
+Keep passwords out of GitHub and client code. The admin status call reports whether
+these variables are present. Moderation actions are disabled until they are present.
+A completed ban/delete is emailed afterward; if SMTP fails, the coach sees that it
+failed and can retry from the dialog or Members list, including after deletion.
+SMTP acceptance is reported accurately; inbox delivery/spam placement cannot be
+guaranteed. Successful records clear their stored recipient email address. Real
+SMTP delivery and a full coach-browser action still need a user-controlled test.
 
-## Enable after approval
+## Controls and enforcement
 
-1. Apply the reviewed SQL and run transaction-only active/banned/deleted access tests.
-2. Deploy `coach-members-test` with JWT verification enabled.
-3. Deploy the prepared account-status checks in `ai`, `ai-test` and `ai-feature-test`.
-   Do not deploy these AI files before the account-status RPC exists.
-4. Confirm SMTP secrets and use a user-controlled disposable account for a real
-   ban/unban/email test, followed by deletion only with explicit consent.
-5. Re-test normal member/coach login and data sync. No APK build is needed to check
-   the test website. The installed app needs a future agreed update for its new
-   banned-account label; server restrictions also protect older app versions.
+Admin > Members > member > Account > Member access contains Ban, Restore access and
+Delete. Coach accounts and self-moderation are blocked server-side. Delete requires
+typing DELETE in a branded dialog. The optional reason appears in the email.
+Ban revokes refresh sessions and blocks new sign-in. Repeated requests are recorded
+once. Failed email retries do not perform the moderation twice.
 
-The new controls are under Admin > Members > member > Account > Member access.
-Coach accounts and self-moderation are blocked server-side. Delete requires typing
-DELETE in the branded confirmation dialog. An optional reason appears in the email.
-Ban revokes refresh sessions and blocks new sign-in; Restore access is available.
-Repeated requests are recorded once; retries do not perform the moderation twice.
+The approved access rules cover profiles, saved data, coach notes, reports and
+Storage. Shared documents receive write restrictions only. Existing ownership and
+coach policies remain; no additional member data access was granted. This is a
+shared backend, so these protections also apply to installed older APKs. The new
+banned-account label requires the updated test web code or a future agreed APK.
+
+The existing AI services were left unchanged. Automatic approval review blocked a
+separate AI endpoint deployment, and that extra change was unnecessary: all three
+existing AI handlers already call Auth getUser before doing work. Supabase Auth
+rejects banned users and sessions deleted by the approved revocation function.
+Reference: https://github.com/supabase/auth/blob/master/internal/api/auth.go
 
 ## Verification and rollback
 
-`node tools/tests/member-moderation.test.js` runs mocked auth, coach/target protection,
-confirmation, mail setup, ban/unban, deletion cleanup and email retry checks. These
-are not tests against real accounts, SMTP or the proposed database policies.
-Related frontend and AI checks run separately. ESLint/TypeScript tooling remains
-unavailable in this checkout; JavaScript parsing and TypeScript stripping are used.
+`node tools/tests/member-moderation.test.js` checks mocked authentication,
+coach/target protection, confirmation, SMTP setup, ban/unban, deletion cleanup and
+post-deletion email retry. Related signup, Today, Android and AI allowance regression
+checks pass. The unauthenticated live moderation probe returned 401. No real email
+was sent. ESLint/TypeScript tooling is not installed or cached in this checkout;
+JavaScript parsing and TypeScript stripping supplement the focused tests.
 
-Before any SQL rollback, restore the prior AI Edge Function versions and revert the
-client moderation changes. Then apply `member-moderation-rollback.sql`. It removes
-the new policies/functions but preserves the private action ledger and pending
-emails. Rolling back code does not restore a deleted account; bans can be undone
-using Restore access. No database rollback is currently needed because deployment
-was blocked before execution.
+Before database rollback, revert the latest client activation commit so the test
+app again tolerates an undeployed account-status RPC, or restore the pre-moderation
+client version. Then apply `member-moderation-rollback.sql`. It removes the new
+policies/functions but preserves private delivery records and pending emails.
+The moderation endpoint disables itself when the account-status RPC is absent.
+The AI endpoints do not need rollback because they were never redeployed.
+
+Code rollback does not restore a deleted account. Bans can be reversed with Restore
+access. Existing records are not deleted by either schema deployment or rollback.

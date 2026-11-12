@@ -1005,8 +1005,6 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     var r=await realFetch(SB_URL+'/rest/v1/rpc/account_status',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:'{}'});
     if(!r.ok){
       var error={};try{error=await r.json()}catch(e){}
-      // shortcut: preserve existing app access before the moderation RPC is deployed; remove after activation.
-      if(error.code==='PGRST202')return 'active';
       throw new Error('Could not verify your account. Please log in again.');
     }
     return r.json();

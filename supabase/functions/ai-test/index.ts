@@ -138,8 +138,6 @@ Deno.serve(async (req: Request) => {
   });
   const { data: { user } } = await asCaller.auth.getUser();
   if (!user) return err("Please sign in", 401);
-  const status = await asCaller.rpc("account_status");
-  if (status.error || status.data !== "active") return err("Account access is blocked. Contact your coach.", 403);
   const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   let body: any;
