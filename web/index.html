@@ -1170,6 +1170,10 @@ html,body,#root{max-width:100%;overflow-x:hidden}
   }
   function startApp(){
     fixTarget();
+    /* The app still contains its old on-phone login screen (from before cloud accounts). It opens when the
+       local flag nt:session is "out", e.g. after an interrupted log out followed by an offline start.
+       This layer is the only login now, so a real login always means "in". */
+    try{if(session&&session.user)origSetSilent('nt:session','in')}catch(e){}
     var src=document.getElementById('nt-app');
     if(!src||src.dataset.ran)return;src.dataset.ran='1';
     var s=document.createElement('script');s.text=src.textContent;document.body.appendChild(s);
@@ -1418,6 +1422,8 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     try{var pendingSignup=JSON.parse(lsGet(QUIZ_PENDING)||'null');if(pendingSignup&&pendingSignup.email&&pendingSignup.data){showSignupVerification(pendingSignup.email);return}}catch(e){}
     var wantLogin=lsGet('ntloginrequest')==='1';lsDel('ntloginrequest');try{wantLogin=wantLogin||sessionStorage.getItem('ntlogin')==='1';sessionStorage.removeItem('ntlogin')}catch(e){}
     if(lsGet('ntbannotice')==='1'){showLogin('Account banned. You can no longer use DropASize. Contact your coach if you have questions.');return}
+    /* Logged out (no saved login) but this phone still has a member's data: show the real login, with Google */
+    if(lsGet('nt:session')==='out'&&lsGet('nt:profile')!==null)wantLogin=true;
     if(!wantLogin&&lsGet(OWNER_KEY)===null){startQuiz(false);return}
     showLogin();
   }
