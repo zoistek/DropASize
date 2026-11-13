@@ -44,10 +44,14 @@
   async function authCall(path,body,token){
     var h={'Content-Type':'application/json',apikey:SB_KEY};
     if(token)h.Authorization='Bearer '+token;
-    var r=await realFetch(SB_URL+'/auth/v1/'+path,{method:'POST',headers:h,body:JSON.stringify(body||{})});
-    var d={};try{d=await r.json()}catch(e){}
-    if(!r.ok){var m=d.msg||d.error_description||d.message||d.error||'Something went wrong';throw new Error(m)}
-    return d;
+    var controller=new AbortController(),timeout=setTimeout(function(){controller.abort()},15000);
+    try{
+      var r=await realFetch(SB_URL+'/auth/v1/'+path,{method:'POST',headers:h,body:JSON.stringify(body||{}),signal:controller.signal});
+      var d={};try{d=await r.json()}catch(e){if(controller.signal.aborted)throw e}
+      if(!r.ok){var m=d.msg||d.error_description||d.message||d.error||'Something went wrong';throw new Error(m)}
+      return d;
+    }catch(e){if(controller.signal.aborted)throw new Error('The connection timed out. Check your internet and try again.');throw e}
+    finally{clearTimeout(timeout)}
   }
   var refreshing=null;
   async function token(){
@@ -824,12 +828,21 @@
     showSignupVerification(em);
     return {pending:true};
   }
-  async function verifyEmailAccount(em,code){
+  async function verifyEmailAccount(em,code,onVerified){
     code=String(code||'').trim();
     if(!/^\d{6,10}$/.test(code))throw new Error('Enter the verification code from your email.');
-    var d=await authCall('verify',{email:em,token:code,type:'email'});
-    if(!d.access_token||!d.user||!d.user.email_confirmed_at)throw new Error('Your email has not been verified. Please try again.');
-    saveSession(d);
+    // If setup failed after verification, retry with the saved session, not the single-use code.
+    var d=session&&session.user&&session.user.email_confirmed_at&&String(session.user.email||'').toLowerCase()===em?session:null;
+    if(!d){
+      d=await authCall('verify',{email:em,token:code,type:'email'});
+      if(!d.access_token||!d.user||!d.user.email_confirmed_at)throw new Error('Your email has not been verified. Please try again.');
+      saveSession(d);
+    }
+    // Permission screens need to be visible before enter() waits for their buttons.
+    if(onVerified)onVerified();
+    // The quiz already mounted React; restart from the saved session before permission pages replace its root.
+    var app=document.getElementById('nt-app');
+    if(app&&app.dataset.ran){reloadApp();return}
     await enter(d.user,null);
   }
   function showSignupVerification(em){
@@ -846,7 +859,7 @@
     var f=panel.querySelector('form'),code=panel.querySelector('#ntv-code'),go=panel.querySelector('#ntv-submit'),resend=panel.querySelector('#ntv-resend'),back=panel.querySelector('#ntv-back'),login=panel.querySelector('#ntv-login'),msg=panel.querySelector('#ntv-msg'),busy=false,editing=false,sentAt=Date.now();
     function say(t,ok){msg.className='msg '+(ok?'ok':'err');msg.textContent=t}
     function lock(on){busy=on;go.disabled=resend.disabled=back.disabled=login.disabled=on;code.disabled=on}
-    f.onsubmit=async function(ev){ev.preventDefault();if(busy)return;lock(true);say('');go.textContent=editing?'Sending code…':'Verifying…';try{if(editing){var pwd=panel.querySelector('#ntv-password').value;if(pwd!==panel.querySelector('#ntv-confirm').value)throw new Error('The passwords don’t match.');await createEmailAccount(panel.querySelector('#ntv-newemail').value,pwd)}else await verifyEmailAccount(em,code.value);panel.remove()}catch(e){say(!editing&&/expired|invalid|otp/i.test(e.message)?'That code is incorrect or expired. Try again, or request a new code.':e.message);lock(false);go.textContent=editing?'Sign up':'Verify email & finish'}};
+    f.onsubmit=async function(ev){ev.preventDefault();if(busy)return;lock(true);say('');go.textContent=editing?'Sending code…':'Verifying…';try{if(editing){var pwd=panel.querySelector('#ntv-password').value;if(pwd!==panel.querySelector('#ntv-confirm').value)throw new Error('The passwords don’t match.');await createEmailAccount(panel.querySelector('#ntv-newemail').value,pwd)}else await verifyEmailAccount(em,code.value,function(){panel.hidden=true});panel.remove()}catch(e){panel.hidden=false;say(!editing&&/expired|invalid|otp/i.test(e.message)?'That code is incorrect or expired. Try again, or request a new code.':e.message);lock(false);go.textContent=editing?'Sign up':'Verify email & finish'}};
     resend.onclick=async function(){if(busy)return;var wait=Math.ceil((60000-(Date.now()-sentAt))/1000);if(wait>0){say('Please wait '+wait+' seconds before requesting another code.');return}lock(true);try{await authCall('resend',{email:em,type:'signup'});sentAt=Date.now();var pending=JSON.parse(lsGet(QUIZ_PENDING)||'null');if(pending&&pending.email===em){pending.at=Date.now();rawSet.call(localStorage,QUIZ_PENDING,JSON.stringify(pending))}say('A new code has been sent. Check your inbox and spam folder.',true)}catch(e){say(e.message)}finally{lock(false)}};
     back.onclick=function(){if(busy)return;editing=true;panel.querySelector('#ntv-edit').hidden=false;panel.querySelector('#ntv-code-field').hidden=true;resend.hidden=back.hidden=true;go.textContent='Sign up';panel.querySelector('#ntv-newemail').value=em;panel.querySelector('#ntv-newemail').focus();say('Your quiz answers are saved. Enter your email and choose a password.',true)};
     login.onclick=function(){if(busy)return;lsDel(QUIZ_PENDING);lsSet('ntloginrequest','1');reloadApp()};
