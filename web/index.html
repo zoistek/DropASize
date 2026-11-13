@@ -141,6 +141,12 @@ window.ntQuizPop=function(title,text,done){
 .nt-je .nt-tick-ring{display:none}
 @media (prefers-reduced-motion:reduce){.nt-ring{animation-duration:2.4s}}
 </style>
+<style id="nt-why-edit">
+/* My why editor and Today "For ..." line. Undo: tag before-why-edit */
+.ntt-why-who{display:block;margin-top:8px;font-size:12.5px;font-weight:700;color:#8FD14F}
+.ntwe-txt{width:100%;box-sizing:border-box;min-height:84px;margin:0 0 14px;padding:12px 14px;border-radius:14px;border:1.5px solid #DCE6D3;background:#fff;font:italic 500 15px/1.45 'Plus Jakarta Sans',system-ui,sans-serif;color:#0F2418;resize:vertical;outline:none}
+.ntwe-txt:focus{border-color:#5DBC01}
+</style>
 </head><body>
 <title>DropASize</title>
 <script>
@@ -2312,6 +2318,23 @@ function NtRings(){
     badges.length?h('div',{className:'ntr-badges'},badges.map(function(b){return h('span',{key:b[1],className:'ntb'},h(NtIcon,{name:b[0],size:14}),b[1])})):null));
 }
 
+/* ---------- My why: edit the words and who it's for (Profile). Saved where the quiz and "Find my why" keep it: profile.why. Restore point: tag before-why-edit ---------- */
+var NT_WHO=['Me','My children','My partner','My health','My future self'];
+function NtWhyEditor(){
+  var h=React.createElement,pr=ntRead('profile',{})||{},w=pr.why||{};
+  var a=React.useState(w.statement||w.q3||''),txt=a[0],setTxt=a[1],b=React.useState(w.forWho||''),who=b[0],setWho=b[1],c=React.useState(false),busy=c[0],setBusy=c[1];
+  async function save(){var t=txt.trim();if(!t){window.ntToast&&window.ntToast('Write your why first');return}if(!who){window.ntToast&&window.ntToast('Pick who you\u2019re doing it for');return}
+    setBusy(true);var cur={};try{var r=await window.storage.get('profile');cur=r&&r.value?JSON.parse(r.value):{}}catch(e){cur=ntRead('profile',{})||{}}
+    var nw=Object.assign({},cur.why||{},{statement:t,forWho:who,date:(cur.why&&cur.why.date)||ntDay(),edited:ntDay()});
+    try{await window.storage.set('profile',JSON.stringify(Object.assign({},cur,{why:nw})));window.dispatchEvent(new Event('nt-why'));window.ntToast&&window.ntToast('Your why is saved')}catch(e){window.ntToast&&window.ntToast('Couldn\u2019t save. Please try again.')}
+    setBusy(false)}
+  return h('div',{className:'ntwe'},
+    h('label',{className:'nta-label',htmlFor:'ntwe-txt'},'Why do you really want to lose weight?'),
+    h('textarea',{id:'ntwe-txt',className:'ntwe-txt',rows:3,maxLength:300,value:txt,placeholder:'e.g. I want to be the energetic mum who joins in, not the one watching',onChange:function(e){setTxt(e.target.value)}}),
+    h(NtChoice,{id:'ntwe-who',label:'Who are you doing it for?',value:who,options:NT_WHO,onChange:setWho}),
+    h('button',{className:'nt-cta',onClick:save,disabled:busy},busy?'Saving\u2026':'Save my why',h('span',{className:'nt-cta-ico'},h(NtIcon,{name:'check',size:16,stroke:2}))));
+}
+
 /* ---------- Shop: brand-styled choices instead of the phone's plain dropdowns. Restore point: tag before-shop-spacing ---------- */
 /* Supermarkets of the chosen country, the member's own ticked shops first. Follows country changes straight away. */
 function ntShopOptions(){var x=ntCountryInfo(),all=(x.c.stores||[]).map(function(s){return s.name}),mine=(x.locale.stores||[]).filter(function(n){return all.indexOf(n)>=0});
@@ -2337,12 +2360,15 @@ function NtTakeawayChoice(props){
 /* ---------- Today, 2026 design (stage 3). Restore point: tag before-today-redesign ---------- */
 /* Your why: the member's own words on a deep-green ribbon. Tap opens Mind, where the morning ritual lives. No why yet: the existing "Find my why" card. */
 function NtWhyRibbon(props){
-  var h=React.createElement,t=ntDay(),pr=ntRead('profile',{})||{},why=pr.why&&pr.why.statement;
+  var h=React.createElement,bump=React.useState(0)[1];
+  React.useEffect(function(){var f=function(){bump(function(x){return x+1})};window.addEventListener('nt-why',f);window.addEventListener('focus',f);return function(){window.removeEventListener('nt-why',f);window.removeEventListener('focus',f)}},[]);
+  var t=ntDay(),pr=ntRead('profile',{})||{},why=pr.why&&pr.why.statement,who=pr.why&&pr.why.forWho;
   var done=!!(((ntRead('ritual-log',{})||{})[t]||{}).morning);
   if(!why)return props.fallback?h(props.fallback,null):null;
   return h('button',{type:'button',className:'ntt-why',onClick:function(){props.go&&props.go('mind')}},
     h('small',null,done?'Your why \u00b7 ritual done today':'Your why \u00b7 tap to start your ritual'),
     h('span',{className:'ntt-why-q'},'\u201c'+why+'\u201d'),
+    who?h('span',{className:'ntt-why-who'},'For '+(who==='Me'?'me':who.charAt(0).toLowerCase()+who.slice(1))):null,
     done?h('span',{className:'ntt-why-tick','aria-label':'Done today'},h(NtIcon,{name:'check',size:16})):null);
 }
 /* This week, Monday to Sunday: a tick on days with activity, today outlined */
@@ -2601,7 +2627,7 @@ function NtAccountSheet(props){
   /* Profile, 2026 design (stage 4): one list of rows, each opens the part it had before. Restore point: tag before-profile-redesign */
   var op=us(null),open=op[0],setOpen=op[1];
   var rr=us(0),bump=rr[1];
-  React.useEffect(function(){var f=function(){bump(function(x){return x+1})};window.addEventListener('nt-nudges',f);window.addEventListener('nt-hc',f);return function(){window.removeEventListener('nt-nudges',f);window.removeEventListener('nt-hc',f)}},[]);
+  React.useEffect(function(){var f=function(){bump(function(x){return x+1})};window.addEventListener('nt-nudges',f);window.addEventListener('nt-hc',f);window.addEventListener('nt-why',f);return function(){window.removeEventListener('nt-nudges',f);window.removeEventListener('nt-hc',f);window.removeEventListener('nt-why',f)}},[]);
   var tg=ntRead('daily-target',{})||{},pr=ntRead('profile',{})||{};
   var days=props.joined?Math.max(1,Math.floor((Date.now()-new Date(props.joined+'T00:00:00').getTime())/864e5)+1):0;
   var plan=[tg.calories?Number(tg.calories).toLocaleString('en-GB')+' kcal':'',pr.style||'',pr.diet&&pr.diet!=='no restrictions'?pr.diet:''].filter(Boolean).join(' \u00b7 ')||'Your daily targets';
@@ -2631,6 +2657,7 @@ function NtAccountSheet(props){
         h('input',{ref:ref,type:'file',accept:'image/*',hidden:true,onChange:pick})),
       h('div',{className:'ntpf-list'},
         row('plan','My plan',plan,planBody),
+        row('why','My why',pr.why&&pr.why.statement?('\u201c'+pr.why.statement+'\u201d'+(pr.why.forWho?' \u00b7 for '+pr.why.forWho.toLowerCase():'')):'Not written yet',h(NtWhyEditor,null)),
         row('name','Name and photo','Change how you appear to your coach and Squad',nameBody),
         row('remind','Reminders',nOn.length?nOn.join(' \u00b7 '):'Off',window.NtNudgeSettings?h(window.NtNudgeSettings,null):null),
         row('hc','Health Connect',hcSub,h(NtHC,{mode:'profile'})),
