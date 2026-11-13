@@ -1,1 +1,1 @@
-barbell-back-squat,smith-machine-squat
+mind-tap-side-hand,mind-tap-head,mind-tap-eyebrow,mind-tap-side-eye,mind-tap-under-eye,mind-tap-under-nose,mind-tap-chin,mind-tap-collarbone,mind-tap-under-arm,mind-calm-anchor

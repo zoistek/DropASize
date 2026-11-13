@@ -70,7 +70,7 @@ def align(im):
     if max(dark) < w // 6: return im  # no clear floor line found: leave as drawn
     out = Image.new("RGB", (w, h), "white"); out.paste(im, (0, FLOOR - r)); return out
 
-def save(im, p): align(im).save(p, "WEBP", quality=82, method=6)
+def save(im, p, align_floor=True): (align(im) if align_floor else im).save(p, "WEBP", quality=82, method=6)
 
 def generate():
     if not KEY: sys.exit("No API key: add the repository secret VOICE (Google AI Studio key).")
@@ -82,14 +82,16 @@ def generate():
     ref = [path("goblet-squat", "before"), path("goblet-squat", "after")]
     for s in todo:
         f, b = s["file"], path(s["file"], "before")
+        style = s.get("style", STYLE)
         if not os.path.exists(b):
-            save(draw(model, ref, f"The two reference images show the style. {STYLE} Exactly one person in the image. Draw this man: {s['before']}."), b)
+            save(draw(model, ref, f"The two reference images show the style. {style} Exactly one person in the image. Draw this man: {s['before']}."), b, align_floor=not f.startswith('mind-'))
             print("  drew", os.path.basename(b))
         if not s.get("hold"):
             a = path(f, "after")
-            save(draw(model, ref + [b], f"Images 1 and 2 show the style. Image 3 is the start position of an exercise. {STYLE} "
-                      f"Draw the END position, which must look clearly different from image 3 (do not copy its pose): {s['after']}. "
-                      f"Keep only the man, camera angle, scale, floor line and equipment the same. Exactly one person in the image."), a)
+            movement = ("Draw the second frame: keep the body still and move only the fingertips into gentle contact. " if f.startswith("mind-") else "Draw the END position, which must look clearly different from image 3 (do not copy its pose): ")
+            save(draw(model, ref + [b], f"Images 1 and 2 show the style. Image 3 is the start position of an exercise. {style} "
+                      f"{movement}{s['after']}. "
+                      f"Keep only the man, camera angle, scale, background and equipment the same. Exactly one person in the image."), a, align_floor=not f.startswith("mind-"))
             print("  drew", os.path.basename(a))
 
 def write_art():

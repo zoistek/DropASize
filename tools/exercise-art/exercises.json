@@ -60,7 +60,7 @@
   {
    "file": "cat-cow",
    "names": [
-    "Cat–cow"
+    "Cat\u2013cow"
    ]
   },
   {
@@ -264,7 +264,7 @@
    "hold": true,
    "names": [
     "Rest",
-    "Round rest · sip water"
+    "Round rest \u00b7 sip water"
    ],
    "before": "sitting relaxed on a simple plain wooden chair, seen from the side, back resting against the chair, hands resting on the thighs, feet flat on the floor line, calm and resting between exercises"
   },
@@ -975,6 +975,96 @@
    ],
    "hold": true,
    "before": "on a mat doing the Pilates hundred: lying on the back, head and shoulders lifted, legs raised in tabletop, arms straight by the sides just off the mat"
+  },
+  {
+   "file": "mind-tap-side-hand",
+   "names": [
+    "Mind tapping side of hand"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front three-quarter view. Both hands at chest height clearly visible. Left hand held upright with palm facing inward; right index and middle fingertips poised beside the fleshy outer edge of the left hand below the little finger, not the palm. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front three-quarter view. Both hands at chest height clearly visible. Left hand held upright with palm facing inward; right index and middle fingertips resting gently beside the fleshy outer edge of the left hand below the little finger, not the palm. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-tap-head",
+   "names": [
+    "Mind tapping top of head"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front view. Right index and middle fingertips poised directly above the crown of the head. Other hand rests by the side. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front view. Right index and middle fingertips resting gently directly above the crown of the head. Other hand rests by the side. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-tap-eyebrow",
+   "names": [
+    "Mind tapping inner eyebrow"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front view. Right index and middle fingertips poised just above the inner end of the right eyebrow beside the bridge of the nose, not on the eyeball. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front view. Right index and middle fingertips resting gently just above the inner end of the right eyebrow beside the bridge of the nose, not on the eyeball. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-tap-side-eye",
+   "names": [
+    "Mind tapping side of eye"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front three-quarter view. Right index and middle fingertips poised beside the outer corner of the right eye, on the temple bone, not touching the eye. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front three-quarter view. Right index and middle fingertips resting gently beside the outer corner of the right eye, on the temple bone, not touching the eye. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-tap-under-eye",
+   "names": [
+    "Mind tapping under eye"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front view. Right index and middle fingertips poised on the cheekbone immediately below the right eye, not touching the eye. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front view. Right index and middle fingertips resting gently on the cheekbone immediately below the right eye, not touching the eye. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-tap-under-nose",
+   "names": [
+    "Mind tapping under nose"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front view. Right index and middle fingertips poised at the philtrum between the nose and upper lip. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front view. Right index and middle fingertips resting gently at the philtrum between the nose and upper lip. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-tap-chin",
+   "names": [
+    "Mind tapping chin crease"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front view. Right index and middle fingertips poised in the crease between the lower lip and chin, below the lip. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front view. Right index and middle fingertips resting gently in the crease between the lower lip and chin, below the lip. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-tap-collarbone",
+   "names": [
+    "Mind tapping collarbone"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front view. Right index and middle fingertips poised below the medial right collarbone beside the upper sternum, not on the throat. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front view. Right index and middle fingertips resting gently below the medial right collarbone beside the upper sternum, not on the throat. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-tap-under-arm",
+   "names": [
+    "Mind tapping under arm"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front three-quarter view. Left arm raised slightly to reveal the left side of the ribs. Right hand crosses the chest, fingertips poised against the left side of ribcage a hand-width below the armpit. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
+   "after": "Front three-quarter view. Left arm raised slightly to reveal the left side of the ribs. Right hand crosses the chest, fingertips resting gently against the left side of ribcage a hand-width below the armpit. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+  },
+  {
+   "file": "mind-calm-anchor",
+   "names": [
+    "Mind calm anchor"
+   ],
+   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
+   "before": "Front three-quarter knees-up view. Right hand at chest height, palm turned towards the viewer. Thumb and MIDDLE finger curved towards each other with a small visible gap. Index, ring and little fingers relaxed and clearly separate. Other hand relaxed.",
+   "after": "Exactly the same camera and man, right hand held at the same chest position. The tip of the thumb gently touches the tip of the MIDDLE finger. Index finger stays separate and relaxed; this is not a thumb-index OK sign. Only the thumb and middle finger close the gap."
   }
  ]
 }
