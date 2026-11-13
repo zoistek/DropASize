@@ -5,12 +5,14 @@ Only the nine EFT point demonstrations and Calm Anchor finger-action steps gain
 illustrations. Meditation, guided relaxation, Craving Crusher, Future You,
 breathing circles and other Mind tools remain unchanged.
 
-Ten before/after pairs are generated once with the existing exercise-art GitHub
+Ten before/after pairs are generated for reuse with the existing exercise-art GitHub
 workflow and its VOICE repository secret. The same Gemini image model receives
 actual goblet-squat training images as style references. Point lessons use a
 closer knees-up view, black outlines, light-grey shading, lime-green shorts and
 white backgrounds. Each second frame uses its first frame as an extra reference.
 Mind images bypass floor-line alignment so close views are not shifted/cropped.
+Visual review led to revised Calm Anchor, under-arm and under-eye pairs; unused
+first drafts were removed. All 20 final files together are under 400 KB.
 The bounded only.txt list includes only these ten sets; completed files are
 skipped on rerun. Members opening a lesson never trigger image generation.
 
@@ -22,7 +24,7 @@ voice prompts, navigation, repetitions and session completion stay intact.
 Verification: node tools/tests/mind-images.test.js checks the nine point mappings,
 Calm Anchor placement only on finger-action steps and no illustrations in the
 other visualisation exercises. Related custom-training, Today and Android checks
-also pass. Generated illustrations require visual review of anatomy and contact
+also pass. Generated illustrations were visually reviewed for anatomy and contact
 positions; two frames illustrate placement, not a precise tapping-rate video.
 
 Revert the Mind UI commit to remove the images from lessons; generated files may
