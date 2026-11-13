@@ -97,6 +97,30 @@ window.ntQuizPop=function(title,text,done){
 @media (max-width:360px){.ntt-day i{width:32px;height:32px}.ntt-tile b{font-size:18px}}
 @media (prefers-reduced-motion:reduce){.ntt-why:active,.ntk-btns button:active,.ntt-pill:active,.ntt-next button:active,.ntt-chat:active{transform:none}}
 </style>
+<style id="nt-profile-2026">
+/* Profile, 2026 design (stage 4). Undo: git revert this commit (restore point: tag before-profile-redesign) */
+.ntpf{position:fixed;inset:0;z-index:200;background:#F5FAF1;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateX(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#0F2418}
+.ntpf.on{transform:none}
+.ntpf-in{max-width:480px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top,0px)) 18px calc(28px + env(safe-area-inset-bottom,0px))}
+.ntpf-top{display:flex;align-items:center;gap:12px}.ntpf-top h1{font-size:20px;font-weight:800;margin:0;letter-spacing:-.01em}
+.ntpf-back{width:44px;height:44px;border-radius:999px;border:0;background:#E8EFE3;color:#0E351D;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ntpf-me{display:flex;align-items:center;gap:14px;margin:18px 0 14px}
+.ntpf-who{display:flex;flex-direction:column;gap:3px;min-width:0}.ntpf-who b{font-size:19px;font-weight:800}.ntpf-who span{font-size:13px;color:#5A635D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ntpf-list{background:#fff;border-radius:22px;padding:0 16px;box-shadow:0 1px 2px rgba(14,53,29,.05),0 8px 24px -14px rgba(14,53,29,.16)}
+.ntpf-item+.ntpf-item{border-top:1px solid #EDF2E8}
+.ntpf-row{width:100%;display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 0;border:0;background:none;text-align:left;cursor:pointer;font-family:inherit;color:#0F2418}
+.ntpf-txt{flex:1;min-width:0}.ntpf-txt b{display:block;font-size:15px;font-weight:700}.ntpf-txt small{display:block;font-size:12.5px;color:#5A635D;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ntpf-chev{font-size:22px;color:#9AA39D;line-height:1;transition:transform .2s}.ntpf-item.open .ntpf-chev{transform:rotate(90deg)}
+.ntpf-body{padding:0 0 16px}
+.ntpf-body .ntn-card{box-shadow:none;margin:0;padding:0;background:none}
+.ntpf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ntpf-stat{background:#EEF8E3;border-radius:14px;padding:10px 12px}.ntpf-stat b{display:block;font-size:16px;font-weight:800}.ntpf-stat span{font-size:12px;color:#5A635D}
+.ntpf-del,.ntpf-out{width:100%;min-height:52px;border-radius:999px;font:700 15px 'Plus Jakarta Sans',system-ui,sans-serif;cursor:pointer;margin-top:12px}
+.ntpf-del{margin-top:18px;background:#FDF1EE;color:#9A3422;border:1.5px solid #F2CFC6}
+.ntpf-out{background:#fff;color:#0E351D;border:1.5px solid #DCE6D3}
+.ntpf-back:active,.ntpf-del:active,.ntpf-out:active{transform:scale(.98)}
+@media (prefers-reduced-motion:reduce){.ntpf,.ntpf-chev{transition:none}}
+</style>
 </head><body>
 <title>DropASize</title>
 <script>
@@ -2457,27 +2481,50 @@ function NtAccountSheet(props){
     setBusy(true);
     try{await window.ntSetDisplayName(v);window.ntToast('Name saved');setTimeout(function(){window.ntReload?window.ntReload():location.reload()},700)}catch(err){window.ntToast(err.message||'Couldn’t save your name');setBusy(false)}
   }
-  return h('div',{className:'nta-wrap'+(shown?' on':''),onClick:function(e){if(e.target===e.currentTarget)close()}},
-    h('div',{className:'nta-sheet nt-shell',role:'dialog','aria-modal':'true','aria-label':'Your account'},h('div',{className:'nt-core'},
-      h('div',{className:'nta-grab','aria-hidden':'true'}),
-      h('div',{className:'nt-card-head'},h('span',{className:'nt-eyebrow'},'Your account'),h('button',{className:'nta-x',onClick:close,'aria-label':'Close'},'Close')),
-      h('div',{className:'nta-photo'},
-        h('button',{type:'button',className:'nt-avbtn',onClick:function(){ref.current&&ref.current.click()},disabled:busy,'aria-label':u?'Change profile photo':'Add profile photo'},h(NtAvatar,{name:name||props.name,size:88}),h('span',{className:'nt-avcam big'},h(NtIcon,{name:'camera',size:18,stroke:1.8}))),
-        h('div',{className:'nta-photo-txt'},h('button',{type:'button',className:'nta-link',onClick:function(){ref.current&&ref.current.click()},disabled:busy},busy?'Please wait…':u?'Change photo':'Add a profile photo'),u?h('button',{type:'button',className:'nta-link mut',onClick:removePhoto,disabled:busy},'Remove photo'):null,h('span',{className:'nta-small'},'Square photos look best.')),
+  /* Profile, 2026 design (stage 4): one list of rows, each opens the part it had before. Restore point: tag before-profile-redesign */
+  var op=us(null),open=op[0],setOpen=op[1];
+  var rr=us(0),bump=rr[1];
+  React.useEffect(function(){var f=function(){bump(function(x){return x+1})};window.addEventListener('nt-nudges',f);window.addEventListener('nt-hc',f);return function(){window.removeEventListener('nt-nudges',f);window.removeEventListener('nt-hc',f)}},[]);
+  var tg=ntRead('daily-target',{})||{},pr=ntRead('profile',{})||{};
+  var days=props.joined?Math.max(1,Math.floor((Date.now()-new Date(props.joined+'T00:00:00').getTime())/864e5)+1):0;
+  var plan=[tg.calories?Number(tg.calories).toLocaleString('en-GB')+' kcal':'',pr.style||'',pr.diet&&pr.diet!=='no restrictions'?pr.diet:''].filter(Boolean).join(' \u00b7 ')||'Your daily targets';
+  var np=window.ntNudges?window.ntNudges.get():{},nOn=[np.why?'why 7:00':'',np.water?'water':'',np.checkin?'check-in':''].filter(Boolean);
+  var hc=window.ntHC,hcSub=!hc||!hc.avail()?'In the Android app: daily steps':hc.state().on?'Connected \u00b7 daily steps':'Not connected';
+  function row(k,title,sub,body,onClick){var isOpen=open===k;
+    return h('div',{key:k,className:'ntpf-item'+(isOpen?' open':'')},
+      h('button',{type:'button',className:'ntpf-row','aria-expanded':body?(isOpen?'true':'false'):void 0,onClick:onClick||function(){setOpen(isOpen?null:k)}},
+        h('span',{className:'ntpf-txt'},h('b',null,title),sub?h('small',null,sub):null),
+        h('span',{className:'ntpf-chev','aria-hidden':'true'},'\u203A')),
+      isOpen&&body?h('div',{className:'ntpf-body'},body):null)}
+  var nameBody=h('div',null,
+    h('div',{className:'nta-photo'},
+      h('div',{className:'nta-photo-txt'},h('button',{type:'button',className:'nta-link',onClick:function(){ref.current&&ref.current.click()},disabled:busy},busy?'Please wait\u2026':u?'Change photo':'Add a profile photo'),u?h('button',{type:'button',className:'nta-link mut',onClick:removePhoto,disabled:busy},'Remove photo'):null,h('span',{className:'nta-small'},'Square photos look best.'))),
+    h('label',{className:'nta-label',htmlFor:'nta-name'},'Display name'),
+    h('input',{id:'nta-name',className:'nta-input',value:name,maxLength:40,autoComplete:'nickname',onChange:function(e){setName(e.target.value)},onKeyDown:function(e){if(e.key==='Enter')saveName()}}),
+    h('button',{className:'nt-cta',onClick:saveName,disabled:busy},'Save',h('span',{className:'nt-cta-ico'},h(NtIcon,{name:'check',size:16,stroke:2}))));
+  var planBody=h('div',{className:'ntpf-grid'},
+    [['Calories',tg.calories?Number(tg.calories).toLocaleString('en-GB')+' kcal':'\u2013'],['Protein',tg.protein?tg.protein+'g':'\u2013'],['Carbs',tg.carbs?tg.carbs+'g':'\u2013'],['Fat',tg.fat?tg.fat+'g':'\u2013']].map(function(x){return h('div',{key:x[0],className:'ntpf-stat'},h('b',null,x[1]),h('span',null,x[0]))}),
+    h('p',{className:'nta-small',style:{gridColumn:'1 / -1',margin:'4px 0 0'}},'Worked out from your quiz answers'+(pr.style?': '+pr.style+' style':'')+(pr.diet?', '+pr.diet:'')+'.'));
+  return h('div',{className:'ntpf'+(shown?' on':''),role:'dialog','aria-modal':'true','aria-label':'Profile'},
+    h('div',{className:'ntpf-in'},
+      h('div',{className:'ntpf-top'},h('button',{type:'button',className:'ntpf-back',onClick:close,'aria-label':'Back'},h('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.4,strokeLinecap:'round',strokeLinejoin:'round'},h('path',{d:'M15 6l-6 6 6 6'}))),h('h1',null,'Profile')),
+      h('div',{className:'ntpf-me'},
+        h('button',{type:'button',className:'nt-avbtn',onClick:function(){ref.current&&ref.current.click()},disabled:busy,'aria-label':u?'Change profile photo':'Add profile photo'},h(NtAvatar,{name:name||props.name,size:60}),h('span',{className:'nt-avcam'},h(NtIcon,{name:'camera',size:14,stroke:1.8}))),
+        h('div',{className:'ntpf-who'},h('b',null,props.name||name||'Member'),h('span',null,[days?'Day '+days:'',props.email||''].filter(Boolean).join(' \u00b7 '))),
         h('input',{ref:ref,type:'file',accept:'image/*',hidden:true,onChange:pick})),
-      h('label',{className:'nta-label',htmlFor:'nta-name'},'Display name'),
-      h('input',{id:'nta-name',className:'nta-input',value:name,maxLength:40,autoComplete:'nickname',onChange:function(e){setName(e.target.value)},onKeyDown:function(e){if(e.key==='Enter')saveName()}}),
-      h('div',{className:'nta-meta'},h('span',null,props.email||''),props.joined?h('span',null,'Member since '+new Date(props.joined+'T12:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'})):null),
-      h('button',{className:'nt-cta',onClick:saveName,disabled:busy},'Save',h('span',{className:'nt-cta-ico'},h(NtIcon,{name:'check',size:16,stroke:2}))),
-      h(NtPremiumTest,null),
-      h('div',{className:'nta-label',style:{marginTop:18}},'Your badges'),h(NtBadges,null),
-      h('div',{className:'nta-label',style:{marginTop:18}},'Invite a friend'),h(NtInvite,null),
-      h('div',{className:'nta-label',style:{marginTop:18}},'Reminders'),window.NtNudgeSettings?h(window.NtNudgeSettings,null):null,
-      h('div',{className:'nta-label',style:{marginTop:18}},'Health Connect'),h(NtHC,{mode:'profile'}),
-      h('div',{className:'nta-row'},
-        h('button',{className:'nta-btn',onClick:function(){close();props.onSettings&&props.onSettings()}},h(NtIcon,{name:'pencil',size:16}),'Email, password and data'),
-        h('button',{className:'nta-btn danger',onClick:function(){close();props.onLogout&&props.onLogout()}},h(NtIcon,{name:'flag',size:16}),'Log out')),
-      h('div',{className:'nta-links'},h('a',{href:window.NT_PRIVACY||'https://zoistek.com/dropasize-privacy/',target:'_blank',rel:'noopener'},'Privacy policy'),h('button',{type:'button',onClick:function(){window.ntReportAI('')}},'Report an AI answer'),h('button',{type:'button',onClick:function(){close();window.ntDeleteMyAccount?window.ntDeleteMyAccount():window.open(window.NT_SITE+'delete-account.html','_blank')}},'Delete account')))));
+      h('div',{className:'ntpf-list'},
+        row('plan','My plan',plan,planBody),
+        row('name','Name and photo','Change how you appear to your coach and Squad',nameBody),
+        row('remind','Reminders',nOn.length?nOn.join(' \u00b7 '):'Off',window.NtNudgeSettings?h(window.NtNudgeSettings,null):null),
+        row('hc','Health Connect',hcSub,h(NtHC,{mode:'profile'})),
+        row('member','Membership','Your plan and purchases',h(NtPremiumTest,null)),
+        row('badges','Your badges','Earned from your Journey',h(NtBadges,null)),
+        row('invite','Invite a friend','Share DropASize',h(NtInvite,null)),
+        row('account','Password & sign-in','Email, password and your data',null,function(){close();props.onSettings&&props.onSettings()}),
+        row('privacy','Privacy policy','How we look after your data',null,function(){window.open(window.NT_PRIVACY||'https://zoistek.com/dropasize-privacy/','_blank','noopener')}),
+        row('report','Report an AI answer','Tell us if the AI coach got something wrong',null,function(){window.ntReportAI('')})),
+      h('button',{type:'button',className:'ntpf-del',onClick:function(){close();window.ntDeleteMyAccount?window.ntDeleteMyAccount():window.open(window.NT_SITE+'delete-account.html','_blank')}},'Delete my account and data'),
+      h('button',{type:'button',className:'ntpf-out',onClick:function(){close();props.onLogout&&props.onLogout()}},'Log out')));
 }
 window.ntOpenAccount=function(opts){
   var el=document.getElementById('nta-root');if(el)return;
