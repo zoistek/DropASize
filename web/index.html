@@ -2352,13 +2352,13 @@ function NtRings(){
 
 /* ---------- My why: edit the words and who it's for (Profile). Saved where the quiz and "Find my why" keep it: profile.why. Restore point: tag before-why-edit ---------- */
 var NT_WHO=['Me','My children','My partner','My health','My future self'];
-function NtWhyEditor(){
+function NtWhyEditor(props){
   var h=React.createElement,pr=ntRead('profile',{})||{},w=pr.why||{};
   var a=React.useState(w.statement||w.q3||''),txt=a[0],setTxt=a[1],b=React.useState(w.forWho||''),who=b[0],setWho=b[1],c=React.useState(false),busy=c[0],setBusy=c[1];
   async function save(){var t=txt.trim();if(!t){window.ntToast&&window.ntToast('Write your why first');return}if(!who){window.ntToast&&window.ntToast('Pick who you\u2019re doing it for');return}
     setBusy(true);var cur={};try{var r=await window.storage.get('profile');cur=r&&r.value?JSON.parse(r.value):{}}catch(e){cur=ntRead('profile',{})||{}}
     var nw=Object.assign({},cur.why||{},{statement:t,forWho:who,date:(cur.why&&cur.why.date)||ntDay(),edited:ntDay()});
-    try{await window.storage.set('profile',JSON.stringify(Object.assign({},cur,{why:nw})));window.dispatchEvent(new Event('nt-why'));window.ntToast&&window.ntToast('Your why is saved')}catch(e){window.ntToast&&window.ntToast('Couldn\u2019t save. Please try again.')}
+    try{await window.storage.set('profile',JSON.stringify(Object.assign({},cur,{why:nw})));window.dispatchEvent(new Event('nt-why'));window.ntToast&&window.ntToast('Your why is saved');if(props&&props.onSaved)props.onSaved()}catch(e){window.ntToast&&window.ntToast('Couldn\u2019t save. Please try again.')}
     setBusy(false)}
   return h('div',{className:'ntwe'},
     h('label',{className:'nta-label',htmlFor:'ntwe-txt'},'Why do you really want to lose weight?'),
@@ -2689,7 +2689,7 @@ function NtAccountSheet(props){
         h('input',{ref:ref,type:'file',accept:'image/*',hidden:true,onChange:pick})),
       h('div',{className:'ntpf-list'},
         row('plan','My plan',plan,planBody),
-        row('why','My why',pr.why&&pr.why.statement?('\u201c'+pr.why.statement+'\u201d'+(pr.why.forWho?' \u00b7 for '+pr.why.forWho.toLowerCase():'')):'Not written yet',h(NtWhyEditor,null)),
+        row('why','My why',pr.why&&pr.why.statement?('\u201c'+pr.why.statement+'\u201d'+(pr.why.forWho?' \u00b7 for '+pr.why.forWho.toLowerCase():'')):'Not written yet',h(NtWhyEditor,{onSaved:close})),
         row('name','Name and photo','Change how you appear to your coach and Squad',nameBody),
         row('remind','Reminders',nOn.length?nOn.join(' \u00b7 '):'Off',window.NtNudgeSettings?h(window.NtNudgeSettings,null):null),
         row('hc','Health Connect',hcSub,h(NtHC,{mode:'profile'})),
