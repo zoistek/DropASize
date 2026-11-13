@@ -30,7 +30,14 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - run: pip install -q pillow==10.4.0
+      - name: Install image-save script dependencies
+        run: |
+          npm install --prefix "$RUNNER_TEMP/art-build" --no-package-lock --ignore-scripts --no-audit --no-fund @babel/parser@7.29.12 @babel/traverse@7.29.12 @babel/generator@7.29.12
+          echo "NODE_PATH=$RUNNER_TEMP/art-build/node_modules" >> "$GITHUB_ENV"
       - name: Draw
         env:
           GEMINI_API_KEY: ${{ secrets.VOICE }}
