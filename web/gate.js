@@ -623,13 +623,86 @@
     catch(e){window.ntToast('Couldn\u2019t send the report. Please try again.');return false}
   };
 
+  /* ---------- AI working: a round brand-colour loader with fun messages that match the task ----------
+     Shown for every AI request. Hidden while a screen already shows its own AI loader ([data-ai-local]). */
+  var AI_MSGS={
+    photo:['Taking a good look at your plate\u2026','Spotting what\u2019s on there\u2026','Guessing the portion sizes\u2026','Checking for hidden oil and ghee\u2026','Weighing it up, no scales needed\u2026','Crunching the numbers\u2026','Nearly there\u2026'],
+    image:['Taking a look at your photo\u2026','Picking out the details\u2026','Thinking like your coach\u2026','Nearly there\u2026'],
+    list:['Checking what you need\u2026','Adding up the quantities\u2026','Sorting it by aisle\u2026','Ticking off the basics\u2026','Nearly there\u2026'],
+    takeaway:['Scanning the menu\u2026','Finding the high-protein heroes\u2026','Spotting the sneaky calories\u2026','Picking dishes you\u2019ll actually enjoy\u2026','Working out the smart swaps\u2026','Nearly ready\u2026'],
+    fullday:['Raiding the ready-meal fridge\u2026','Keeping it zero-cook\u2026','Matching every meal to your calories\u2026','Checking the protein adds up\u2026','Nearly ready\u2026'],
+    plan:['Looking at your calories and protein\u2026','Picking meals you\u2019ll actually enjoy\u2026','Balancing breakfast, lunch and dinner\u2026','Making batch cooking easy\u2026','Adding a little variety\u2026','Nearly there\u2026'],
+    makeover:['Reading your recipe\u2026','Finding smart swaps\u2026','Boosting the protein\u2026','Trimming calories, keeping the taste\u2026','Nearly ready\u2026'],
+    shop:['Walking the aisles for you\u2026','Reading the labels\u2026','Comparing protein per pack\u2026','Skipping the sugar traps\u2026','Filling your basket\u2026','Nearly ready\u2026'],
+    myday:['Looking at what\u2019s left of your day\u2026','Matching meals to your calories\u2026','Balancing your protein\u2026','Lining up the rest of your meals\u2026','Nearly ready\u2026'],
+    eat:['Peeking in your coach\u2019s recipe book\u2026','Counting what\u2019s left for today\u2026','Finding meals that fit like a glove\u2026','Weighing up the protein\u2026','Plating up your options\u2026'],
+    estimate:['Reading what you ate\u2026','Weighing it up, no scales needed\u2026','Counting the calories\u2026','Checking the protein\u2026','Nearly there\u2026'],
+    checkin:['Reading your weeks\u2026','Spotting what\u2019s working\u2026','Finding what gets in the way\u2026','Writing your coach\u2019s notes\u2026','Nearly ready\u2026'],
+    recipe:['Raiding the spice rack\u2026','Chopping the onions, no tears\u2026','Balancing protein and flavour\u2026','Counting every teaspoon of oil\u2026','Taste-testing in our heads\u2026','Plating it up\u2026','Nearly ready\u2026'],
+    note:['Finding the right words\u2026','Writing your note\u2026','Adding a little encouragement\u2026','Nearly ready\u2026'],
+    tips:['Thinking like a coach\u2026','Picking tips that suit you\u2026','Keeping it safe and simple\u2026','Nearly ready\u2026'],
+    chat:['Your coach is reading your message\u2026','Thinking it through\u2026','Checking your day\u2026','Writing a reply\u2026','Nearly there\u2026'],
+    think:['Thinking it through\u2026','Working on it\u2026','Putting it together\u2026','Nearly there\u2026']};
+  function aiTask(body){
+    var j={};try{j=typeof body==='string'?JSON.parse(body):{}}catch(e){}
+    var parts=[],img=false,turns=0;
+    if(j.system)parts.push(typeof j.system==='string'?j.system:JSON.stringify(j.system));
+    (j.messages||[]).forEach(function(m){turns++;var c=m&&m.content;if(typeof c==='string')parts.push(c);else if(Array.isArray(c))c.forEach(function(x){if(x&&x.type==='image')img=true;else if(x&&x.text)parts.push(x.text)})});
+    var t=parts.join(' ').toLowerCase(),has=function(r){return r.test(t)};
+    if(/^\s*you are the dropasize coach/.test(t))return 'chat';  /* coach chat sends its persona first */
+    if(img)return has(/plate|meal|food|calorie|portion|ate|dish/)?'photo':'image';
+    if(has(/shopping list|aisle/))return 'list';
+    if(has(/takeaway|restaurant|order from/))return 'takeaway';
+    if(has(/entire day of food|zero cooking|whole day of food/))return 'fullday';
+    if(has(/ is at .* left today/))return 'myday';
+    if(has(/is shopping at|grab-and-go/))return 'shop';
+    if(has(/\b(7|14)-day|meal plan|meal-planning|dinner ideas|weekly plan|plan for the week|week of meals/))return 'plan';
+    if(has(/recipe/)&&has(/rework|makeover|healthier version|swap|remove an ingredient|adapt/))return 'makeover';
+    if(has(/supermarket|in-store|on the shelf|shelves|what to buy|store/))return 'shop';
+    if(has(/kcal left|calories left|remaining calories|what (can|should) (i|they) eat/))return 'eat';
+    if(has(/check-?ins?|weekly reflection|their weeks|over the weeks/))return 'checkin';
+    if(has(/recipe/))return 'recipe';
+    if(has(/estimate|how many calories|nutrition for|calories and protein (in|for)/))return 'estimate';
+    if(has(/\bnote\b|letter|message for/))return 'note';
+    if(has(/\btips?\b/))return 'tips';
+    if(turns>1||has(/coach/))return 'chat';
+    return 'think';
+  }
+  window.__ntAiTask=aiTask;
+  window.ntAiMsgs=AI_MSGS;
+  var aiBusy=0,aiBox=null,aiTimer=null,aiWatch=null;
+  function aiLocalShowing(){var el=document.querySelector('[data-ai-local]');return !!(el&&el.getClientRects().length)}
+  function aiShow(task){
+    aiBusy++;if(aiBusy>1&&aiBox){aiBox.dataset.task=task;return}
+    var msgs=AI_MSGS[task]||AI_MSGS.think,i=0;
+    if(!aiBox){aiBox=document.createElement('div');aiBox.className='nt-aiw';aiBox.setAttribute('role','status');aiBox.setAttribute('aria-live','polite');
+      aiBox.innerHTML='<span class="nt-aiw-ring" aria-hidden="true"><svg viewBox="0 0 44 44" width="30" height="30"><circle cx="22" cy="22" r="18" fill="none" stroke="#E3EADC" stroke-width="5"/><circle cx="22" cy="22" r="18" fill="none" stroke="#5DBC01" stroke-width="5" stroke-linecap="round" stroke-dasharray="40 200"/></svg></span><span class="nt-aiw-txt"></span>';
+      document.body.appendChild(aiBox)}
+    var txt=aiBox.querySelector('.nt-aiw-txt');txt.textContent=msgs[0];aiBox.dataset.task=task;
+    clearInterval(aiTimer);aiTimer=setInterval(function(){i=Math.min(i+1,msgs.length-1);txt.classList.remove('in');void txt.offsetWidth;txt.textContent=msgs[i];txt.classList.add('in')},2200);
+    var sync=function(){if(aiBox)aiBox.classList.toggle('on',!aiLocalShowing())};
+    clearInterval(aiWatch);aiWatch=setInterval(sync,250);setTimeout(sync,60);
+  }
+  function aiHide(){aiBusy=Math.max(0,aiBusy-1);if(aiBusy||!aiBox)return;clearInterval(aiTimer);clearInterval(aiWatch);var b=aiBox;aiBox=null;b.classList.remove('on');setTimeout(function(){b.remove()},300)}
+  (function(){var st=document.createElement('style');st.id='nt-aiw-css';st.textContent=
+    '.nt-aiw{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:9500;display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);width:max-content;padding:12px 18px 12px 12px;border-radius:999px;background:#0E351D;color:#fff;font:700 14px "Plus Jakarta Sans",system-ui,sans-serif;box-shadow:0 14px 34px -12px rgba(14,53,29,.55);opacity:0;transform:translate(-50%,12px);transition:opacity .25s ease,transform .3s cubic-bezier(.2,.8,.2,1);pointer-events:none}'+
+    '.nt-aiw.on{opacity:1;transform:translate(-50%,0)}'+
+    '.nt-aiw-ring{width:30px;height:30px;flex:none;display:block;animation:ntAiwSpin 1s linear infinite}.nt-aiw-ring svg{display:block}'+
+    '.nt-aiw .nt-aiw-ring circle:first-child{stroke:rgba(255,255,255,.18)}'+
+    '.nt-aiw-txt{line-height:1.3}.nt-aiw-txt.in{animation:ntAiwIn .35s ease}'+
+    '@keyframes ntAiwSpin{to{transform:rotate(360deg)}}@keyframes ntAiwIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}'+
+    '@media (prefers-reduced-motion:reduce){.nt-aiw,.nt-aiw-txt.in{transition:none;animation:none}.nt-aiw-ring{animation-duration:2.4s}}';
+    (document.head||document.documentElement).appendChild(st)})();
+
   /* ---------- AI: send the app's Claude calls to the Supabase "ai" function ---------- */
   window.fetch=async function(url,opts){
     var u=typeof url==='string'?url:(url&&url.url)||'';
     if(u.indexOf('api.anthropic.com')===-1)return realFetch(url,opts);
     if(lsGet('ntaiok')!=='1'&&!(await aiNotice()))return new Response(JSON.stringify({type:'error',error:{type:'daily_limit',message:'AI features are off until you agree to the AI notice.'}}),{status:429,headers:{'Content-Type':'application/json'}});
     var t;try{t=await token()}catch(e){return new Response(JSON.stringify({error:{message:'Please log in again to use the coach'}}),{status:401,headers:{'Content-Type':'application/json'}})}
-    var res=await realFetch(SB_URL+'/functions/v1/ai-feature-test',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+t},body:opts&&opts.body,signal:opts&&opts.signal});
+    var res;aiShow(aiTask(opts&&opts.body));
+    try{res=await realFetch(SB_URL+'/functions/v1/ai-feature-test',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+t},body:opts&&opts.body,signal:opts&&opts.signal})}
+    finally{aiHide()}
     try{
       var left=res.headers.get('x-ai-remaining'),kind=res.headers.get('x-ai-kind');
       if(left!==null&&Number(left)<=5)window.ntToast(Number(left)===0?'That was your last of today\u2019s '+KIND[kind]+'. More tomorrow.':left+' '+KIND[kind]+' left today');
