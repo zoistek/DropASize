@@ -3,7 +3,7 @@
 // Google requires that screen to show the privacy policy, so open it in the browser.
 const { withMainActivity } = require('@expo/config-plugins');
 
-const URL = 'https://zoistek.github.io/DropASize/privacy.html#health-connect';
+const URL = 'https://zoistek.com/dropasize-privacy/';
 const HELPER = `
   // Health Connect permissions rationale: show the privacy policy.
   private fun ntHealthRationale(i: android.content.Intent?): Boolean {
