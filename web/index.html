@@ -44,6 +44,18 @@ window.ntQuizPop=function(title,text,done){
   requestAnimationFrame(function(){bg.classList.add('on')});setTimeout(finish,1600);
 };
 </script>
+<style id="nt-nudges-css">
+/* Reminders card in the account panel (stage 2). Undo: tag before-nudges-health */
+.ntn-card{background:#fff;border-radius:20px;padding:6px 16px;margin:12px 0;box-shadow:0 1px 2px rgba(14,53,29,.05),0 8px 24px -14px rgba(14,53,29,.16);font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+.ntn-head{font-size:12.5px;font-weight:800;color:#2F7308;padding:12px 0 2px}
+.ntn-row{display:flex;align-items:center;gap:12px;padding:12px 0}.ntn-row+.ntn-row{border-top:1px solid #EDF2E8}
+.ntn-txt{flex:1;min-width:0}.ntn-txt b{display:block;font-size:14.5px;color:#0F2418}.ntn-txt small{display:block;font-size:12.5px;color:#5A635D;margin-top:2px}
+.ntn-sw{position:relative;width:52px;height:32px;flex:none;border-radius:999px;border:0;background:#D9E2D3;cursor:pointer;transition:background .2s}
+.ntn-sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.ntn-sw.on{background:#5DBC01}.ntn-sw.on::after{transform:translateX(20px)}
+.ntn-note{font-size:12px;color:#5A635D;margin:0;padding:0 0 12px}
+@media (prefers-reduced-motion:reduce){.ntn-sw,.ntn-sw::after{transition:none}}
+</style>
 </head><body>
 <title>DropASize</title>
 <script>
@@ -752,6 +764,49 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     }
   };
 
+  /* ---------- gentle nudges: why at 7:00, water 4 a day (quiet after 8pm), a daily check-in ---------- */
+  var NUDGES=[
+    {k:'why',title:'Your why at 7:00',sub:'Start the day with the mirror',times:[[7,0]]},
+    {k:'water',title:'Water nudges',sub:'4 a day, quiet after 8pm',times:[[10,0],[12,30],[15,0],[17,30]]},
+    {k:'checkin',title:'Daily check-in',sub:'Once a day: food, water and steps',times:[[19,30]]}];
+  function nudgePrefs(){var p=null;try{p=JSON.parse(lsGet('nt:nudges')||'null')}catch(e){}return p&&typeof p==='object'?p:{}}
+  function nudgeText(k,i){
+    if(k==='why'){var w='';try{var pr=JSON.parse(lsGet('nt:profile')||'{}');w=pr.why&&pr.why.statement||''}catch(e){}
+      return ['Your why',w?'\u201c'+String(w).slice(0,160)+'\u201d Water first, then say it in the mirror.':'Start your morning ritual: water first, then your why in the mirror.']}
+    if(k==='water')return ['Time for a glass of water',['Start the morning strong with a full glass.','A glass now keeps cravings quiet this afternoon.','Halfway through the day: top up.','One more glass before the evening.'][i]||'A glass of water now.'];
+    return ['Daily check-in','How did today go? Log your food, water and steps in a minute.'];
+  }
+  function scheduleNudges(){
+    if(!window.ReactNativeWebView||!session||!session.user)return; /* the website never shows phone reminders */
+    var p=nudgePrefs(),now=Date.now(),base=new Date();base.setHours(0,0,0,0);
+    for(var d=0;d<7;d++)NUDGES.forEach(function(n){n.times.forEach(function(t,i){
+      var at=new Date(base.getFullYear(),base.getMonth(),base.getDate()+d,t[0],t[1]).getTime();
+      var id='nudge-'+n.k+'-'+i+'-'+d,tx=nudgeText(n.k,i);
+      if(p[n.k]&&at>now)window.ntNotify.schedule(id,at,tx[0],tx[1]);else window.ntNotify.cancel(id);
+    })});
+    lsSet('ntnudgesat',String(now));
+  }
+  window.ntNudges={
+    list:NUDGES,
+    get:function(){return nudgePrefs()},
+    set:function(k,on){var p=nudgePrefs();p[k]=!!on;p.asked=1;localStorage.setItem('nt:nudges',JSON.stringify(p));scheduleNudges();try{window.dispatchEvent(new Event('nt-nudges'))}catch(e){}},
+    inApp:function(){return !!window.ReactNativeWebView}
+  };
+  /* Reminders are scheduled a week ahead; top them up when the app opens or comes back */
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&Date.now()-(Number(lsGet('ntnudgesat'))||0)>6*3600e3)scheduleNudges()});
+
+  /* Profile switch for the reminders (rendered inside the app's account panel) */
+  window.NtNudgeSettings=function(){
+    var R=window.React,st=R.useState(0),force=st[1];
+    R.useEffect(function(){var f=function(){force(function(x){return x+1})};window.addEventListener('nt-nudges',f);return function(){window.removeEventListener('nt-nudges',f)}},[]);
+    var p=nudgePrefs(),inApp=!!window.ReactNativeWebView;
+    return R.createElement('div',{className:'ntn-card'},
+      NUDGES.map(function(n){var on=!!p[n.k];return R.createElement('div',{key:n.k,className:'ntn-row'},
+        R.createElement('span',{className:'ntn-txt'},R.createElement('b',null,n.title),R.createElement('small',null,n.sub)),
+        R.createElement('button',{type:'button',role:'switch','aria-checked':on?'true':'false','aria-label':n.title,className:'ntn-sw'+(on?' on':''),onClick:function(){window.ntNudges.set(n.k,!on)}}))}),
+      inApp?null:R.createElement('p',{className:'ntn-note'},'Reminders arrive in the DropASize app on your phone.'));
+  };
+
   /* ---------- shared data (Squad, challenge, recipes, bookings) and coach role ---------- */
   var isCoach=false;
   function enc(v){return encodeURIComponent(v)}
@@ -1196,7 +1251,9 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     }
     window.ntSessionEmail=user.email;
     await Promise.all([loadRole(),loadLibrary(),loadCoachMeals(),loadAvatar()]);
+    await askPermissionsOnce(user);
     startApp();
+    setTimeout(scheduleNudges,1500);
     window.dispatchEvent(new Event('nt-auth-ready'));
     setTimeout(function(){coachPlanNotice().catch(function(){})},600);
     setTimeout(hcBoot,600);
@@ -1453,6 +1510,42 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     root.querySelector('#ntw-in').onclick=function(){document.documentElement.classList.remove('ntw-on');showLogin()};
   }
   var TICK='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var SW_CSS='.ntw-illo{width:112px;height:112px;border-radius:34px;background:#EEF8E3;color:#2F7308;display:flex;align-items:center;justify-content:center;margin:26px auto 0}'+
+    '.ntw-center{text-align:center}.ntw-center h2{margin-top:22px}'+
+    '.ntw-perms{margin-top:22px;padding:4px 16px;border-radius:22px;background:#fff;box-shadow:0 1px 2px rgba(14,53,29,.05),0 8px 24px -14px rgba(14,53,29,.16)}'+
+    '.ntw-perm{display:flex;align-items:center;gap:12px;padding:14px 0}.ntw-perm+.ntw-perm{border-top:1px solid #EDF2E8}.ntw-perm span{flex:1}.ntw-perm b{display:block;font-size:15px;color:#0F2418}.ntw-perm small{display:block;font-size:12.5px;color:#5A635D;margin-top:2px}'+
+    '.ntw-sw{position:relative;width:52px;height:32px;flex:none;border-radius:999px;border:0;background:#D9E2D3;transition:background .2s}.ntw-sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}.ntw-sw.on{background:#5DBC01}.ntw-sw.on::after{transform:translateX(20px)}'+
+    '.ntw-skip{min-height:48px;border:0;background:none;color:#5A635D;font-size:15px;font-weight:700}';
+  var BELL='<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>';
+  var HEART='<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/><path d="M5.5 12.5h3l1.5-2.5 2.5 5 1.5-2.5h4.5"/></svg>';
+  function permPage(o){
+    var root=document.getElementById('root');document.documentElement.classList.remove('ntw-on');document.documentElement.classList.add('ntp-on');
+    root.innerHTML='<style>'+WEL_CSS+SW_CSS+'</style><main class="ntw ntw-light ntw-in"><div class="ntw-center"><div class="ntw-illo">'+o.icon+'</div><h2>'+o.title+'</h2><p class="ntw-sub">'+o.sub+'</p></div>'+
+      '<div class="ntw-perms">'+o.rows.map(function(r,i){return '<div class="ntw-perm"><span><b>'+r[0]+'</b><small>'+r[1]+'</small></span><button type="button" class="ntw-sw on" role="switch" aria-checked="true" aria-label="'+r[0]+'" data-i="'+i+'"></button></div>'}).join('')+'</div>'+
+      (o.note?'<p class="ntw-why">'+o.note+'</p>':'')+
+      '<div class="ntw-actions"><button type="button" class="ntw-next" id="ntw-yes">'+o.yes+'</button><button type="button" class="ntw-skip" id="ntw-no">'+o.no+'</button></div></main>';
+    var on=o.rows.map(function(){return true});
+    [].forEach.call(root.querySelectorAll('.ntw-sw'),function(b){b.onclick=function(){var i=+b.dataset.i;on[i]=!on[i];b.classList.toggle('on',on[i]);b.setAttribute('aria-checked',on[i]?'true':'false')}});
+    root.querySelector('#ntw-yes').onclick=function(){o.done(on)};
+    root.querySelector('#ntw-no').onclick=function(){o.done(null)};
+    window.scrollTo(0,0);
+  }
+  /* After sign-up or the first login on this phone: ask for reminders, then Health Connect. On the website the pages show and the buttons simply continue. */
+  function askPermissionsOnce(user){
+    var key='ntperms:'+user.id;
+    if(lsGet(key))return Promise.resolve();
+    if(window.ReactNativeWebView)hcPost('status');
+    return new Promise(function(resolve){
+      function finish(){lsSet(key,'1');document.documentElement.classList.remove('ntp-on');resolve()}
+      permPage({icon:BELL,title:'Gentle nudges, never nagging',sub:'Pick the reminders that help. Change them any time in your profile.',
+        rows:NUDGES.map(function(n){return [n.title,n.sub]}),yes:'Turn on reminders',no:'Not now',
+        done:function(on){var p=nudgePrefs();NUDGES.forEach(function(n,i){p[n.k]=!!(on&&on[i])});p.asked=1;localStorage.setItem('nt:nudges',JSON.stringify(p));scheduleNudges();
+          permPage({icon:HEART,title:'Connect Health Connect',sub:'Your daily steps fill in by themselves. You choose what we see.',
+            rows:[['Steps','For your daily steps target']],yes:'Connect',no:'Skip for now',note:'We never sell your health data. You can disconnect any time.',
+            done:function(hc){if(hc&&hc[0]&&window.ReactNativeWebView){if(hcAvail==='update')hcPost('install');else window.ntHC.connect()}finish()}});
+        }});
+    });
+  }
   function showProof(){
     var root=document.getElementById('root');document.documentElement.classList.remove('ntw-on');document.documentElement.classList.add('ntp-on');
     var gets=['Meals sized to your calories, your diet and your faith','Mind coaching: your why, rituals, Craving SOS and calm tools','A training plan that changes every 6 weeks','Weekly check-ins and chat with your coach'];
@@ -2286,6 +2379,7 @@ function NtAccountSheet(props){
       h(NtPremiumTest,null),
       h('div',{className:'nta-label',style:{marginTop:18}},'Your badges'),h(NtBadges,null),
       h('div',{className:'nta-label',style:{marginTop:18}},'Invite a friend'),h(NtInvite,null),
+      h('div',{className:'nta-label',style:{marginTop:18}},'Reminders'),window.NtNudgeSettings?h(window.NtNudgeSettings,null):null,
       h('div',{className:'nta-label',style:{marginTop:18}},'Health Connect'),h(NtHC,{mode:'profile'}),
       h('div',{className:'nta-row'},
         h('button',{className:'nta-btn',onClick:function(){close();props.onSettings&&props.onSettings()}},h(NtIcon,{name:'pencil',size:16}),'Email, password and data'),
