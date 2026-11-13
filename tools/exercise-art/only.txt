@@ -1,2 +1,1 @@
-mind-tap-side-hand,mind-tap-head,mind-tap-eyebrow,mind-tap-side-eye,mind-tap-under-eye,mind-tap-under-nose,mind-tap-chin,mind-tap-collarbone,mind-tap-under-arm,mind-calm-anchor
-
+mind-tap-under-eye-v2,mind-tap-under-arm-v2,mind-calm-anchor-v2

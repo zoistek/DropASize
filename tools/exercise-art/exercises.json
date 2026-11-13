@@ -1013,13 +1013,13 @@
    "after": "Front three-quarter view. Right index and middle fingertips resting gently beside the outer corner of the right eye, on the temple bone, not touching the eye. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
   },
   {
-   "file": "mind-tap-under-eye",
+   "file": "mind-tap-under-eye-v2",
    "names": [
     "Mind tapping under eye"
    ],
-   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
-   "before": "Front view. Right index and middle fingertips poised on the cheekbone immediately below the right eye, not touching the eye. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
-   "after": "Front view. Right index and middle fingertips resting gently on the cheekbone immediately below the right eye, not touching the eye. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+   "style": "Use ONLY the visual line-art style of the reference man. IMPORTANT: output ONE SINGLE VIEW of EXACTLY ONE man. NOT a collage, NOT a comparison, NOT two figures. Plain white background, black outlines, soft grey muscle shading, same bald athletic character and lime-green shorts #8CC900. Square image. CROP to waist-up so hands and target point are LARGE and clear. No floor line, text, arrows or labels. The AFTER frame must have identical framing, camera and body; only the relevant fingers move.",
+   "before": "ONE waist-up man in FRONT VIEW. His LEFT hand hangs relaxed at his side and MUST NOT touch his face. RIGHT index and middle fingertips hover below his RIGHT eye, on the upper cheekbone. Keep the eyeball completely unobstructed and eyes open; the fingers are BELOW the lower eyelid, not over the eyeball. Exactly one hand near the face. One man, one pose.",
+   "after": "SAME single man, same front-view camera. LEFT hand stays down at his side. RIGHT index and middle fingertips gently contact the RIGHT CHEEKBONE just BELOW the eye. Eye remains clearly visible and untouched. No pressing the eye, no palm covering face, no second hand near face. Only fingertips move into contact."
   },
   {
    "file": "mind-tap-under-nose",
@@ -1049,22 +1049,22 @@
    "after": "Front view. Right index and middle fingertips resting gently below the medial right collarbone beside the upper sternum, not on the throat. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
   },
   {
-   "file": "mind-tap-under-arm",
+   "file": "mind-tap-under-arm-v2",
    "names": [
     "Mind tapping under arm"
    ],
-   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
-   "before": "Front three-quarter view. Left arm raised slightly to reveal the left side of the ribs. Right hand crosses the chest, fingertips poised against the left side of ribcage a hand-width below the armpit. The tapping fingers hover about one centimetre away from the target point. This is the preparatory frame.",
-   "after": "Front three-quarter view. Left arm raised slightly to reveal the left side of the ribs. Right hand crosses the chest, fingertips resting gently against the left side of ribcage a hand-width below the armpit. The same fingers now make gentle contact with exactly that point. Show the same man and same pose as the starting reference; only the tapping fingertips move the final centimetre. No head movement."
+   "style": "Use ONLY the visual line-art style of the reference man. IMPORTANT: output ONE SINGLE VIEW of EXACTLY ONE man. NOT a collage, NOT a comparison, NOT two figures. Plain white background, black outlines, soft grey muscle shading, same bald athletic character and lime-green shorts #8CC900. Square image. CROP to waist-up so hands and target point are LARGE and clear. No floor line, text, arrows or labels. The AFTER frame must have identical framing, camera and body; only the relevant fingers move.",
+   "before": "ONE waist-up man shown in LEFT SIDE PROFILE. His LEFT elbow is raised out sideways and above shoulder height, exposing the side of his ribcage below his left armpit. His RIGHT hand reaches across, fingers hovering just off the LEFT SIDE of the ribs, about a palm-width BELOW the armpit, directly down the side seam of the torso. Fingers must NOT be over the front of the chest, sternum or nipple. Show one man with exactly two arms, one pose.",
+   "after": "SAME single man and camera. LEFT elbow stays raised well away from the ribs, exposing his left side. RIGHT fingertips now gently touch the SIDE of the left ribcage a hand-width BELOW the armpit, on the side seam, NOT the front of the chest. Only fingertips move into contact. One man, one pose."
   },
   {
-   "file": "mind-calm-anchor",
+   "file": "mind-calm-anchor-v2",
    "names": [
     "Mind calm anchor"
    ],
-   "style": "Match the supplied DropASize training references: SAME bald athletic man, simple nearly featureless face, clean black outlines, minimal light-grey muscle shading, lime-green shorts in the brand colour #8CC900, white trainers, pure white background, square canvas. No text, arrows, labels, equipment or decorative objects. For these hand-placement lessons use a clear knees-up view so the head, hands and contact point are large enough to understand. Identical framing, body and camera in both frames. Accurate anatomy and exactly five fingers on each visible hand. The only movement is the tapping fingers; the head and body remain still.",
-   "before": "Front three-quarter knees-up view. Right hand at chest height, palm turned towards the viewer. Thumb and MIDDLE finger curved towards each other with a small visible gap. Index, ring and little fingers relaxed and clearly separate. Other hand relaxed.",
-   "after": "Exactly the same camera and man, right hand held at the same chest position. The tip of the thumb gently touches the tip of the MIDDLE finger. Index finger stays separate and relaxed; this is not a thumb-index OK sign. Only the thumb and middle finger close the gap."
+   "style": "Use ONLY the visual line-art style of the reference man. IMPORTANT: output ONE SINGLE VIEW of EXACTLY ONE man. NOT a collage, NOT a comparison, NOT two figures. Plain white background, black outlines, soft grey muscle shading, same bald athletic character and lime-green shorts #8CC900. Square image. CROP to waist-up so hands and target point are LARGE and clear. No floor line, text, arrows or labels. The AFTER frame must have identical framing, camera and body; only the relevant fingers move.",
+   "before": "ONE waist-up man, three-quarter view. One hand lifted to his chest with palm towards the viewer. Clearly show all five fingers. Thumb and MIDDLE fingertip almost meet but leave a small gap. The INDEX finger (the finger nearest the thumb) points upwards and MUST NOT touch the thumb. Ring and little fingers relaxed. This is a thumb-to-middle-finger calming gesture, NOT the thumb-index OK sign. Only one man, one pose.",
+   "after": "The EXACT SAME single man, same camera, with thumb tip now gently touching the tip of the MIDDLE finger. Index finger remains upright and entirely separate from the thumb. The hand stays at chest height. One person, one pose, no second figure."
   }
  ]
 }

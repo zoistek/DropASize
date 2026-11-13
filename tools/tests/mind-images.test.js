@@ -7,5 +7,5 @@ assert.equal(render('l',[0,-1]).length,0);for(let i=0;i<9;i++)assert.deepEqual(r
 for(let f=0;f<6;f++){assert.equal(render('m',[0,f]).length,0);assert.equal(render('m',[2,f]).length,0)}
 for(let f=0;f<5;f++)assert.equal(render('m',[1,f]).length,[1,4].includes(f)?1:0);
 const sets=JSON.parse(fs.readFileSync('tools/exercise-art/exercises.json','utf8')).sets.filter(s=>s.file.startsWith('mind-'));assert.equal(sets.length,10);for(const s of sets){assert(s.style.includes('reference'));assert(s.style.includes('#8CC900'));assert(s.before&&s.after);assert(!s.hold)}
-const only=fs.readFileSync('tools/exercise-art/only.txt','utf8').trim().split(',');assert.equal(only.length,10);assert(only.every(x=>x.startsWith('mind-')));
+const only=fs.readFileSync('tools/exercise-art/only.txt','utf8').trim().split(',');assert(only.length>0&&only.length<=10);assert(only.every(x=>x.startsWith('mind-')));
 console.log('Mind images passed: nine exact tapping placements; Calm Anchor only on finger-action steps; no pictures in eyes-closed visualisations; bounded 10-pair generation list and shared training artwork style.');
