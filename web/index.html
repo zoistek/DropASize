@@ -1420,7 +1420,7 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     if(fresh){lsDel(QUIZ_PENDING); /* "New here?" on a phone someone used before: start clean, nobody sees the last member's data */
       var old=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf('nt:')===0||k.indexOf('nt-')===0))old.push(k)}}catch(e){}
       old.forEach(function(k){try{rawRemove.call(localStorage,k)}catch(e){}});[OWNER_KEY,DIRTY_KEY,'ntdataver','ntlastpull'].forEach(function(k){try{rawRemove.call(localStorage,k)}catch(e){}});dirty={};
-      rawSet.call(localStorage,'ntguest','1');reloadApp();return;
+      rawSet.call(localStorage,'ntguest','1');rawSet.call(localStorage,'ntgoquiz','1');reloadApp();return;
     }
     rawSet.call(localStorage,'ntguest','1');
     window.ntShowLogin=function(){try{localStorage.setItem('ntloginrequest','1')}catch(e){}reloadApp()};
@@ -1652,11 +1652,10 @@ html,body,#root{max-width:100%;overflow-x:hidden}
     var wantLogin=lsGet('ntloginrequest')==='1';lsDel('ntloginrequest');try{wantLogin=wantLogin||sessionStorage.getItem('ntlogin')==='1';sessionStorage.removeItem('ntlogin')}catch(e){}
     if(lsGet('ntbannotice')==='1'){showLogin('Account banned. You can no longer use DropASize. Contact your coach if you have questions.');return}
     /* Logged out: everyone starts on the welcome screen (Lose weight. Start with your mind.), also after logging out.
-       Exceptions: a quiz already in progress carries on, and "Log in" / "I already have an account" open the login. */
-    if(!wantLogin){
-      if(lsGet(OWNER_KEY)===null&&!wantsWelcome()){startQuiz(false);return}
-      afterSplash(showWelcome);return;
-    }
+       Only "Log in" / "I already have an account" open the login. A quiz in progress continues via Get my plan -> Next. */
+    /* A clean quiz was just asked for (Get my plan -> Next, or New here? on the login page): go straight to it once */
+    if(!wantLogin&&lsGet('ntgoquiz')==='1'){lsDel('ntgoquiz');startQuiz(false);return}
+    if(!wantLogin){afterSplash(showWelcome);return}
     showLogin();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
