@@ -987,7 +987,7 @@
       '<p class="ntw-why">Why we ask: this is just who you\u2019ll be working with. No question here.</p>'+
       '<div class="ntw-actions" style="padding-top:18px"><button type="button" class="ntw-next" id="ntw-next">Next</button></div></main>';
     root.querySelector('#ntw-back').onclick=showWelcome;
-    root.querySelector('#ntw-next').onclick=function(){document.documentElement.classList.remove('ntp-on');startQuiz(false)};
+    root.querySelector('#ntw-next').onclick=function(){document.documentElement.classList.remove('ntp-on');startQuiz(lsGet(OWNER_KEY)!==null)};
     window.scrollTo(0,0);
   }
 
@@ -1015,9 +1015,12 @@
     try{var pendingSignup=JSON.parse(lsGet(QUIZ_PENDING)||'null');if(pendingSignup&&pendingSignup.email&&pendingSignup.data){showSignupVerification(pendingSignup.email);return}}catch(e){}
     var wantLogin=lsGet('ntloginrequest')==='1';lsDel('ntloginrequest');try{wantLogin=wantLogin||sessionStorage.getItem('ntlogin')==='1';sessionStorage.removeItem('ntlogin')}catch(e){}
     if(lsGet('ntbannotice')==='1'){showLogin('Account banned. You can no longer use DropASize. Contact your coach if you have questions.');return}
-    /* Logged out (no saved login) but this phone still has a member's data: show the real login, with Google */
-    if(lsGet('nt:session')==='out'&&lsGet('nt:profile')!==null)wantLogin=true;
-    if(!wantLogin&&lsGet(OWNER_KEY)===null){if(wantsWelcome()){afterSplash(showWelcome);return}startQuiz(false);return}
+    /* Logged out: everyone starts on the welcome screen (Lose weight. Start with your mind.), also after logging out.
+       Exceptions: a quiz already in progress carries on, and "Log in" / "I already have an account" open the login. */
+    if(!wantLogin){
+      if(lsGet(OWNER_KEY)===null&&!wantsWelcome()){startQuiz(false);return}
+      afterSplash(showWelcome);return;
+    }
     showLogin();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
